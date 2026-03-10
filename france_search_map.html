@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recherche Immobilière — France | James Nisbet Immobilier</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #1B2A4A;
+    --gold:   #C9A96E;
+    --gold-dk:#A07840;
+    --gold-lt:#F5E6CC;
+    --slate:  #2C5F8A;
+    --grey:   #2E2E2E;
+    --light:  #F8F5F0;
+    --white:  #FFFFFF;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Jost', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .page-header {
+    text-align: center;
+    padding: 48px 24px 28px;
+    position: relative;
+  }
+  .page-header::after {
+    content: '';
+    display: block;
+    width: 60px; height: 2px;
+    background: var(--gold);
+    margin: 16px auto 0;
+  }
+  .page-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(28px, 4vw, 46px);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--white);
+    line-height: 1.15;
+  }
+  .page-header h1 span { color: var(--gold); }
+  .page-header p {
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* ── LEGEND ── */
+  .legend-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 24px 20px;
+    flex-wrap: wrap;
+  }
+  .legend-label { font-size: 11px; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; }
+  .legend-gradient {
+    width: 180px; height: 10px;
+    border-radius: 6px;
+    background: linear-gradient(to right, #4fc3f7, #26a69a, #66bb6a, #ffca28, #ef5350);
+  }
+  .legend-values {
+    display: flex;
+    justify-content: space-between;
+    width: 180px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.45);
+    margin-top: 2px;
+  }
+
+  /* ── MAP CONTAINER ── */
+  .map-wrapper {
+    position: relative;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 16px 8px;
+    cursor: crosshair;
+  }
+
+  #france-map {
+    width: 100%;
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 8px 32px rgba(0,0,0,0.4));
+  }
+
+  .region-path {
+    stroke: rgba(255,255,255,0.18);
+    stroke-width: 0.8;
+    cursor: pointer;
+    transition: opacity 0.18s, filter 0.18s;
+  }
+  .region-path:hover {
+    opacity: 0.82;
+    filter: brightness(1.22) drop-shadow(0 0 6px rgba(201,169,110,0.5));
+    stroke: var(--gold);
+    stroke-width: 1.4;
+  }
+
+  /* ── TOOLTIP ── */
+  #tooltip {
+    position: fixed;
+    background: var(--navy);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    padding: 14px 18px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 1000;
+    min-width: 220px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip .tt-region {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+  #tooltip .tt-dept {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 10px;
+    letter-spacing: 0.06em;
+  }
+  #tooltip .tt-price {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--white);
+  }
+  #tooltip .tt-price span { font-size: 13px; font-weight: 300; color: rgba(255,255,255,0.55); }
+  #tooltip .tt-change {
+    font-size: 11px;
+    margin-top: 6px;
+    letter-spacing: 0.04em;
+  }
+  #tooltip .tt-change.up   { color: #66bb6a; }
+  #tooltip .tt-change.down { color: #ef5350; }
+  #tooltip .tt-hint {
+    margin-top: 10px;
+    font-size: 10px;
+    color: rgba(201,169,110,0.6);
+    letter-spacing: 0.08em;
+    border-top: 1px solid rgba(201,169,110,0.2);
+    padding-top: 8px;
+  }
+
+  /* ── CITY DOTS ── */
+  .city-dot {
+    cursor: pointer;
+    transition: r 0.15s;
+  }
+  .city-dot circle { transition: r 0.15s, fill 0.15s; }
+  .city-dot:hover circle { fill: var(--gold); r: 5; }
+  .city-label {
+    fill: rgba(255,255,255,0.7);
+    font-family: 'Jost', sans-serif;
+    font-size: 8px;
+    font-weight: 500;
+    pointer-events: none;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── HINT BAR ── */
+  .hint-bar {
+    text-align: center;
+    padding: 10px 24px 24px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.1em;
+  }
+  .hint-bar strong { color: var(--gold); font-weight: 500; }
+
+  /* ── MODAL OVERLAY ── */
+  #modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,16,30,0.88);
+    backdrop-filter: blur(6px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  #modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  #modal {
+    background: var(--light);
+    color: var(--grey);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    transform: translateY(24px);
+    transition: transform 0.25s;
+    position: relative;
+  }
+  #modal-overlay.open #modal { transform: translateY(0); }
+
+  .modal-header {
+    background: var(--navy);
+    padding: 24px 28px 20px;
+    border-radius: 12px 12px 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .modal-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--white);
+  }
+  .modal-header h2 span { color: var(--gold); }
+  .modal-header p {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 4px;
+    letter-spacing: 0.08em;
+  }
+  .modal-close {
+    position: absolute;
+    top: 18px; right: 20px;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.6);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .modal-close:hover { border-color: var(--gold); color: var(--gold); }
+
+  .modal-body { padding: 24px 28px 28px; }
+
+  /* ── FORM ── */
+  .form-section {
+    margin-bottom: 24px;
+  }
+  .form-section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(27,42,74,0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .form-section-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px; height: 14px;
+    background: var(--gold);
+    border-radius: 2px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--navy);
+    opacity: 0.7;
+    text-transform: uppercase;
+  }
+
+  input, select, textarea {
+    background: var(--white);
+    border: 1px solid rgba(27,42,74,0.18);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-family: 'Jost', sans-serif;
+    font-size: 13px;
+    color: var(--grey);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+    appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,169,110,0.15);
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231B2A4A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  /* Checkbox grid */
+  .check-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--white);
+    border: 1px solid rgba(27,42,74,0.14);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    font-size: 12px;
+    color: var(--grey);
+  }
+  .check-item:hover { border-color: var(--gold); }
+  .check-item input[type=checkbox] {
+    width: 14px; height: 14px;
+    accent-color: var(--navy);
+    flex-shrink: 0;
+    padding: 0;
+  }
+  .check-item.checked {
+    border-color: var(--navy);
+    background: rgba(27,42,74,0.05);
+  }
+
+  /* Number inputs row */
+  .number-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .number-btn {
+    width: 30px; height: 30px;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .number-btn:hover { background: var(--gold-dk); }
+  .number-display {
+    min-width: 36px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--navy);
+    padding: 0 4px;
+  }
+
+  /* Budget slider */
+  .budget-display {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+  .budget-display span { font-size: 16px; font-weight: 400; color: rgba(27,42,74,0.5); }
+  input[type=range] {
+    padding: 0;
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--navy) 0%, var(--navy) var(--val, 30%), rgba(27,42,74,0.2) var(--val, 30%));
+    border: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+
+  /* Submit */
+  .btn-submit {
+    width: 100%;
+    padding: 15px;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-family: 'Jost', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-submit::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(201,169,110,0.2));
+  }
+  .btn-submit:hover { background: var(--gold-dk); transform: translateY(-1px); }
+  .btn-submit:active { transform: translateY(0); }
+
+  /* Success state */
+  .success-msg {
+    text-align: center;
+    padding: 40px 28px;
+    display: none;
+  }
+  .success-msg.visible { display: block; }
+  .success-icon {
+    width: 64px; height: 64px;
+    background: rgba(27,42,74,0.08);
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+  .success-msg h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+  .success-msg p { font-size: 13px; color: rgba(27,42,74,0.6); }
+
+  /* ── DATA FRESHNESS ── */
+  .data-badge {
+    text-align: center;
+    padding: 0 24px 32px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 0.08em;
+  }
+  .data-badge a { color: rgba(201,169,110,0.5); text-decoration: none; }
+
+  /* Scrollbar */
+  #modal::-webkit-scrollbar { width: 5px; }
+  #modal::-webkit-scrollbar-track { background: transparent; }
+  #modal::-webkit-scrollbar-thumb { background: rgba(27,42,74,0.2); border-radius: 4px; }
+
+  @media (max-width: 520px) {
+    .modal-body { padding: 18px 16px 20px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .check-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-header">
+  <h1>Recherche Immobilière<br><span>Partout en France</span></h1>
+  <p>Prix au m² par région · Données actualisées · Service confidentiel</p>
+</div>
+
+<!-- LEGEND -->
+<div class="legend-bar">
+  <span class="legend-label">Bas</span>
+  <div>
+    <div class="legend-gradient"></div>
+    <div class="legend-values"><span>1 500 €</span><span>3 000 €</span><span>5 000 €</span><span>8 000 €</span><span>12 000 €+</span></div>
+  </div>
+  <span class="legend-label">Élevé</span>
+</div>
+
+<!-- MAP -->
+<div class="map-wrapper">
+  <svg id="france-map" viewBox="0 0 550 600" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- REGIONS — simplified SVG paths for all 13 metropolitan regions + overseas -->
+    <!-- Île-de-France -->
+    <path class="region-path" id="idf"
+      d="M268 148 L282 140 L296 148 L296 168 L282 176 L268 168 Z"
+      fill="#ef5350"
+      data-region="Île-de-France" data-dept="Paris · Seine-et-Marne · Yvelines · Essonne" data-price="10200" data-change="+1.8" data-cities="Paris,Versailles,Boulogne-Billancourt"/>
+
+    <!-- Hauts-de-France -->
+    <path class="region-path" id="hdf"
+      d="M220 60 L310 60 L330 90 L310 130 L282 140 L268 148 L240 130 L200 110 L200 80 Z"
+      fill="#42a5f5"
+      data-region="Hauts-de-France" data-dept="Nord · Pas-de-Calais · Somme · Aisne · Oise" data-price="2400" data-change="-0.3" data-cities="Lille,Amiens,Valenciennes"/>
+
+    <!-- Normandie -->
+    <path class="region-path" id="norm"
+      d="M100 80 L200 80 L200 110 L180 140 L155 158 L120 158 L90 138 L75 110 Z"
+      fill="#66bb6a"
+      data-region="Normandie" data-dept="Seine-Maritime · Eure · Calvados · Manche · Orne" data-price="2100" data-change="+0.5" data-cities="Rouen,Caen,Le Havre"/>
+
+    <!-- Bretagne -->
+    <path class="region-path" id="bret"
+      d="M30 140 L90 138 L120 158 L118 192 L90 208 L50 210 L18 190 L14 162 Z"
+      fill="#4fc3f7"
+      data-region="Bretagne" data-dept="Finistère · Côtes-d'Armor · Morbihan · Ille-et-Vilaine" data-price="2800" data-change="+2.1" data-cities="Rennes,Brest,Nantes"/>
+
+    <!-- Pays de la Loire -->
+    <path class="region-path" id="pdl"
+      d="M90 208 L118 192 L155 158 L180 170 L185 210 L168 240 L148 258 L118 252 L88 238 Z"
+      fill="#4db6ac"
+      data-region="Pays de la Loire" data-dept="Loire-Atlantique · Maine-et-Loire · Sarthe · Mayenne · Vendée" data-price="2700" data-change="+1.4" data-cities="Nantes,Angers,Le Mans"/>
+
+    <!-- Centre-Val de Loire -->
+    <path class="region-path" id="cvl"
+      d="M185 170 L220 148 L268 148 L268 168 L260 200 L248 228 L220 240 L190 238 L168 240 L185 210 Z"
+      fill="#66bb6a"
+      data-region="Centre-Val de Loire" data-dept="Loiret · Loir-et-Cher · Indre-et-Loire · Cher · Indre · Eure-et-Loir" data-price="2200" data-change="-0.2" data-cities="Orléans,Tours,Bourges"/>
+
+    <!-- Grand Est -->
+    <path class="region-path" id="gest"
+      d="M310 60 L380 55 L410 90 L406 130 L380 155 L350 165 L330 155 L310 130 Z"
+      fill="#42a5f5"
+      data-region="Grand Est" data-dept="Bas-Rhin · Haut-Rhin · Moselle · Meurthe-et-Moselle · Meuse · Marne · Aube · Haute-Marne · Ardennes" data-price="2300" data-change="+0.6" data-cities="Strasbourg,Reims,Metz"/>
+
+    <!-- Bourgogne-Franche-Comté -->
+    <path class="region-path" id="bfc"
+      d="M296 168 L330 155 L350 165 L380 155 L400 190 L390 230 L360 248 L330 250 L310 238 L300 210 Z"
+      fill="#66bb6a"
+      data-region="Bourgogne-Franche-Comté" data-dept="Côte-d'Or · Saône-et-Loire · Nièvre · Yonne · Doubs · Jura · Haute-Saône · Territoire de Belfort" data-price="2000" data-change="+0.3" data-cities="Dijon,Besançon,Chalon-sur-Saône"/>
+
+    <!-- Auvergne-Rhône-Alpes -->
+    <path class="region-path" id="ara"
+      d="M310 238 L330 250 L360 248 L390 230 L420 252 L428 290 L415 320 L392 342 L370 338 L350 318 L330 302 L310 275 Z"
+      fill="#ffca28"
+      data-region="Auvergne-Rhône-Alpes" data-dept="Rhône · Isère · Ain · Savoie · Haute-Savoie · Loire · Puy-de-Dôme · Allier · Cantal · Haute-Loire · Ardèche · Drôme" data-price="3800" data-change="+2.3" data-cities="Lyon,Grenoble,Clermont-Ferrand,Annecy"/>
+
+    <!-- Nouvelle-Aquitaine -->
+    <path class="region-path" id="naq"
+      d="M118 252 L148 258 L168 240 L190 238 L220 240 L248 258 L255 295 L245 330 L225 358 L195 372 L162 375 L132 360 L108 330 L100 295 Z"
+      fill="#66bb6a"
+      data-region="Nouvelle-Aquitaine" data-dept="Gironde · Dordogne · Lot-et-Garonne · Charente · Deux-Sèvres · Vienne · Haute-Vienne · Corrèze · Creuse · Charente-Maritime · Pyrénées-Atlantiques · Landes" data-price="3100" data-change="+3.2" data-cities="Bordeaux,Limoges,Poitiers,Pau,Bayonne"/>
+
+    <!-- Occitanie -->
+    <path class="region-path" id="occ"
+      d="M225 358 L245 330 L255 295 L290 282 L310 275 L330 302 L350 318 L355 350 L340 375 L308 390 L278 392 L250 385 L228 375 L220 365 Z"
+      fill="#ffa726"
+      data-region="Occitanie" data-dept="Hérault · Gard · Haute-Garonne · Pyrénées-Orientales · Aude · Tarn · Aveyron · Lot · Tarn-et-Garonne · Gers · Hautes-Pyrénées · Ariège · Lozère" data-price="2900" data-change="+2.8" data-cities="Toulouse,Montpellier,Nîmes,Perpignan"/>
+
+    <!-- PACA -->
+    <path class="region-path" id="paca"
+      d="M355 350 L370 338 L392 342 L415 320 L435 340 L442 368 L425 388 L400 395 L375 390 L355 375 Z"
+      fill="#ef5350"
+      data-region="Provence-Alpes-Côte d'Azur" data-dept="Bouches-du-Rhône · Var · Alpes-Maritimes · Vaucluse · Alpes-de-Haute-Provence · Hautes-Alpes" data-price="5200" data-change="+1.9" data-cities="Marseille,Nice,Toulon,Aix-en-Provence"/>
+
+    <!-- Corse -->
+    <path class="region-path" id="cors"
+      d="M450 388 L462 378 L472 390 L475 410 L468 425 L455 428 L445 415 L444 400 Z"
+      fill="#ffa726"
+      data-region="Corse" data-dept="Haute-Corse · Corse-du-Sud" data-price="4200" data-change="+1.2" data-cities="Ajaccio,Bastia"/>
+
+    <!-- Île-de-France detailed overlay (Paris pulse) -->
+    <circle cx="282" cy="156" r="4" fill="rgba(239,83,80,0.3)" class="pulse-ring"/>
+    <circle cx="282" cy="156" r="2.5" fill="#ef5350"/>
+
+    <!-- CITY DOTS -->
+    <g class="city-dot" data-city="Paris" data-price="10500" data-region="Île-de-France">
+      <circle cx="282" cy="156" r="3.5" fill="#ef5350" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <text class="city-label" x="287" y="153">Paris</text>
+    </g>
+    <g class="city-dot" data-city="Lyon" data-price="5200" data-region="Auvergne-Rhône-Alpes">
+      <circle cx="362" cy="270" r="3" fill="#ffca28" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="367" y="268">Lyon</text>
+    </g>
+    <g class="city-dot" data-city="Marseille" data-price="4100" data-region="PACA">
+      <circle cx="395" cy="378" r="3" fill="#ef5350" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="400" y="376">Marseille</text>
+    </g>
+    <g class="city-dot" data-city="Bordeaux" data-price="4200" data-region="Nouvelle-Aquitaine">
+      <circle cx="162" cy="310" r="3" fill="#66bb6a" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="167" y="308">Bordeaux</text>
+    </g>
+    <g class="city-dot" data-city="Toulouse" data-price="3300" data-region="Occitanie">
+      <circle cx="268" cy="368" r="3" fill="#ffa726" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="273" y="366">Toulouse</text>
+    </g>
+    <g class="city-dot" data-city="Nice" data-price="6200" data-region="PACA">
+      <circle cx="430" cy="358" r="3" fill="#ef5350" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="435" y="356">Nice</text>
+    </g>
+    <g class="city-dot" data-city="Nantes" data-price="3800" data-region="Pays de la Loire">
+      <circle cx="138" cy="225" r="3" fill="#4db6ac" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="143" y="223">Nantes</text>
+    </g>
+    <g class="city-dot" data-city="Strasbourg" data-price="3700" data-region="Grand Est">
+      <circle cx="390" cy="115" r="3" fill="#42a5f5" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="395" y="113">Strasbourg</text>
+    </g>
+    <g class="city-dot" data-city="Lille" data-price="3100" data-region="Hauts-de-France">
+      <circle cx="272" cy="82" r="3" fill="#42a5f5" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="277" y="80">Lille</text>
+    </g>
+    <g class="city-dot" data-city="Montpellier" data-price="3600" data-region="Occitanie">
+      <circle cx="322" cy="368" r="3" fill="#ffa726" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="327" y="366">Montpellier</text>
+    </g>
+    <g class="city-dot" data-city="Rennes" data-price="3900" data-region="Bretagne">
+      <circle cx="105" cy="175" r="3" fill="#4fc3f7" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="110" y="173">Rennes</text>
+    </g>
+    <g class="city-dot" data-city="Grenoble" data-price="3200" data-region="Auvergne-Rhône-Alpes">
+      <circle cx="392" cy="305" r="3" fill="#ffca28" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text class="city-label" x="397" y="303">Grenoble</text>
+    </g>
+  </svg>
+</div>
+
+<!-- HINT -->
+<div class="hint-bar">
+  <strong>Survolez</strong> une région pour voir les prix · <strong>Double-cliquez</strong> pour lancer une recherche
+</div>
+
+<!-- DATA BADGE -->
+<div class="data-badge">
+  Prix indicatifs au m² — Source : données de marché notariales &amp; observatoires locaux — Actualisé trimestriellement<br>
+  <a href="#">Méthodologie</a> · Les prix varient selon la localisation précise, l'état et le type de bien
+</div>
+
+<!-- TOOLTIP -->
+<div id="tooltip">
+  <div class="tt-region" id="tt-region">—</div>
+  <div class="tt-dept" id="tt-dept">—</div>
+  <div class="tt-price" id="tt-price">— <span>€/m²</span></div>
+  <div class="tt-change" id="tt-change">—</div>
+  <div class="tt-hint">Double-cliquez pour rechercher ici</div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <div class="modal-header">
+      <h2>Demande de Recherche — <span id="modal-region-name">France</span></h2>
+      <p>Service confidentiel · Réponse sous 24h ouvrées · Sans engagement</p>
+      <button class="modal-close" id="modal-close-btn">✕</button>
+    </div>
+
+    <div class="modal-body" id="modal-form-body">
+      <form id="search-form" onsubmit="handleSubmit(event)">
+
+        <!-- IDENTITÉ -->
+        <div class="form-section">
+          <div class="form-section-title">Vos coordonnées</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Titre</label>
+              <select name="title">
+                <option value="">— Choisir —</option>
+                <option>M.</option><option>Mme</option><option>Dr</option><option>Me</option><option>Prof.</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Prénom *</label>
+              <input type="text" name="firstname" required placeholder="Jean">
+            </div>
+            <div class="form-group">
+              <label>Nom *</label>
+              <input type="text" name="lastname" required placeholder="Dupont">
+            </div>
+            <div class="form-group">
+              <label>Email *</label>
+              <input type="email" name="email" required placeholder="jean.dupont@email.com">
+            </div>
+            <div class="form-group">
+              <label>Téléphone</label>
+              <input type="tel" name="phone" placeholder="+33 6 12 34 56 78">
+            </div>
+          </div>
+        </div>
+
+        <!-- LOCALISATION -->
+        <div class="form-section">
+          <div class="form-section-title">Localisation recherchée</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Région</label>
+              <select name="region" id="form-region-select">
+                <option value="">— Toute la France —</option>
+                <option>Île-de-France</option><option>Hauts-de-France</option><option>Normandie</option>
+                <option>Bretagne</option><option>Pays de la Loire</option><option>Centre-Val de Loire</option>
+                <option>Grand Est</option><option>Bourgogne-Franche-Comté</option>
+                <option>Nouvelle-Aquitaine</option><option>Occitanie</option>
+                <option>Auvergne-Rhône-Alpes</option><option>Provence-Alpes-Côte d'Azur</option>
+                <option>Corse</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Département</label>
+              <select name="dept" id="form-dept-select">
+                <option value="">— Choisir une région d'abord —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Ville / Commune</label>
+              <input type="text" name="city" id="form-city-input" placeholder="ex : Bordeaux, Paris 6e…">
+            </div>
+            <div class="form-group">
+              <label>Rayon (km)</label>
+              <select name="radius">
+                <option>5 km</option><option>10 km</option><option selected>20 km</option>
+                <option>30 km</option><option>50 km</option><option>100 km</option><option>Pas de limite</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- TYPE DE BIEN -->
+        <div class="form-section">
+          <div class="form-section-title">Type de bien</div>
+          <div class="check-grid" id="property-types">
+            <label class="check-item"><input type="checkbox" name="type" value="château"> Château</label>
+            <label class="check-item"><input type="checkbox" name="type" value="manoir"> Manoir / Bastide</label>
+            <label class="check-item"><input type="checkbox" name="type" value="maison"> Maison / Villa</label>
+            <label class="check-item"><input type="checkbox" name="type" value="pavillon"> Pavillon / Bungalow</label>
+            <label class="check-item"><input type="checkbox" name="type" value="appartement"> Appartement</label>
+            <label class="check-item"><input type="checkbox" name="type" value="loft"> Loft / Duplex</label>
+            <label class="check-item"><input type="checkbox" name="type" value="propriete"> Propriété d'exception</label>
+            <label class="check-item"><input type="checkbox" name="type" value="autre"> Autre</label>
+          </div>
+        </div>
+
+        <!-- CARACTÉRISTIQUES -->
+        <div class="form-section">
+          <div class="form-section-title">Caractéristiques</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Chambres</label>
+              <div class="number-row">
+                <button type="button" class="number-btn" onclick="changeNum('bedrooms',-1)">−</button>
+                <span class="number-display" id="bedrooms-display">2</span>
+                <button type="button" class="number-btn" onclick="changeNum('bedrooms',1)">+</button>
+                <input type="hidden" name="bedrooms" id="bedrooms-val" value="2">
+                <span style="font-size:11px;color:rgba(46,46,46,0.45);margin-left:4px;">min.</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Pièces de vie</label>
+              <div class="number-row">
+                <button type="button" class="number-btn" onclick="changeNum('living',-1)">−</button>
+                <span class="number-display" id="living-display">1</span>
+                <button type="button" class="number-btn" onclick="changeNum('living',1)">+</button>
+                <input type="hidden" name="living" id="living-val" value="1">
+                <span style="font-size:11px;color:rgba(46,46,46,0.45);margin-left:4px;">min.</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Surface min. (m²)</label>
+              <input type="number" name="surface_min" placeholder="100" min="0">
+            </div>
+            <div class="form-group">
+              <label>Surface max. (m²)</label>
+              <input type="number" name="surface_max" placeholder="500" min="0">
+            </div>
+            <div class="form-group">
+              <label>Terrain min. (m²)</label>
+              <input type="number" name="terrain_min" placeholder="500" min="0">
+            </div>
+            <div class="form-group">
+              <label>DPE maximum</label>
+              <select name="dpe">
+                <option value="">— Indifférent —</option>
+                <option>A</option><option>B</option><option>C</option>
+                <option>D</option><option>E</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Options -->
+          <div style="margin-top:12px;">
+            <label style="display:block;margin-bottom:8px;">Options souhaitées</label>
+            <div class="check-grid">
+              <label class="check-item"><input type="checkbox" name="opt" value="parking"> Parking / Garage</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="piscine"> Piscine</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="jardin"> Jardin</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="terrasse"> Terrasse / Balcon</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="cave"> Cave / Chai</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="dependances"> Dépendances</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="vue"> Vue dégagée</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="calme"> Environnement calme</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="plain-pied"> Plain-pied</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="neuf"> Neuf / VEFA</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="standing"> Immeuble standing</label>
+              <label class="check-item"><input type="checkbox" name="opt" value="gardien"> Gardien / Digicode</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- BUDGET -->
+        <div class="form-section">
+          <div class="form-section-title">Budget</div>
+          <div class="budget-display">
+            <span id="budget-label">500 000</span> <span>€</span>
+          </div>
+          <input type="range" name="budget" id="budget-range"
+            min="100000" max="10000000" step="50000" value="500000"
+            style="--val:4.3%"
+            oninput="updateBudget(this.value)">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(46,46,46,0.4);margin-top:4px;">
+            <span>100 K€</span><span>500 K€</span><span>1 M€</span><span>3 M€</span><span>10 M€</span>
+          </div>
+          <input type="hidden" name="budget_hidden" id="budget-val" value="500000">
+        </div>
+
+        <!-- SERVICES COMPLÉMENTAIRES -->
+        <div class="form-section">
+          <div class="form-section-title">Services complémentaires souhaités</div>
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" name="svc" value="notaire"> Notaire</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="geometre"> Géomètre-expert</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="architecte"> Architecte</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="decorateur"> Décorateur d'intérieur</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="finance"> Courtier en financement</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="gestion-patrimoine"> Gestion de patrimoine</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="demenagement"> Déménagement</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="conciergerie"> Conciergerie</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="diagnostics"> Diagnostics techniques</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="assurance"> Assurance habitation</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="fiscal"> Conseil fiscal</label>
+            <label class="check-item"><input type="checkbox" name="svc" value="autre-svc"> Autre</label>
+          </div>
+        </div>
+
+        <!-- MESSAGE -->
+        <div class="form-section">
+          <div class="form-section-title">Informations complémentaires</div>
+          <div class="form-group full">
+            <label>Décrivez votre projet (contexte, contraintes, délai souhaité…)</label>
+            <textarea name="message" rows="3" placeholder="Ex : Recherche d'une propriété pour résidence principale, idéalement dans un cadre verdoyant à moins de 30 min de Bordeaux, disponible avant fin 2025…"></textarea>
+          </div>
+          <div style="margin-top:12px;padding:12px;background:rgba(27,42,74,0.06);border-radius:6px;border-left:3px solid var(--gold);">
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+              <input type="checkbox" name="rgpd" required style="width:14px;height:14px;margin-top:2px;flex-shrink:0;">
+              <span style="font-size:11px;color:rgba(46,46,46,0.6);line-height:1.5;">
+                J'accepte que mes données soient traitées par EI Alexander Nisbet (James Nisbet Immobilier) afin de traiter ma demande de recherche immobilière, conformément à la <a href="/mentions-legales" style="color:var(--gold-dk)">politique de confidentialité</a> (RGPD).
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">ENVOYER MA DEMANDE DE RECHERCHE</button>
+      </form>
+
+      <!-- SUCCESS -->
+      <div class="success-msg" id="success-msg">
+        <div class="success-icon">✓</div>
+        <h3>Demande envoyée avec succès</h3>
+        <p style="margin-top:8px;">James Nisbet vous contactera sous 24h ouvrées pour discuter de votre projet en toute confidentialité.</p>
+        <p style="margin-top:16px;font-size:12px;color:rgba(27,42,74,0.4);">Un email de confirmation vous a été adressé.</p>
+        <button onclick="closeModal()" style="margin-top:24px;padding:10px 28px;background:var(--navy);color:white;border:none;border-radius:6px;font-family:'Jost',sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;">FERMER</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse {
+  0%,100% { r: 4; opacity: 0.3; }
+  50%      { r: 9; opacity: 0; }
+}
+.pulse-ring { animation: pulse 2.5s ease-in-out infinite; }
+</style>
+
+<script>
+// ── DEPARTMENTS BY REGION ──
+const deptsByRegion = {
+  "Île-de-France": ["Paris (75)","Seine-et-Marne (77)","Yvelines (78)","Essonne (91)","Hauts-de-Seine (92)","Seine-Saint-Denis (93)","Val-de-Marne (94)","Val-d'Oise (95)"],
+  "Hauts-de-France": ["Nord (59)","Pas-de-Calais (62)","Somme (80)","Aisne (02)","Oise (60)"],
+  "Normandie": ["Seine-Maritime (76)","Eure (27)","Calvados (14)","Manche (50)","Orne (61)"],
+  "Bretagne": ["Finistère (29)","Côtes-d'Armor (22)","Morbihan (56)","Ille-et-Vilaine (35)"],
+  "Pays de la Loire": ["Loire-Atlantique (44)","Maine-et-Loire (49)","Sarthe (72)","Mayenne (53)","Vendée (85)"],
+  "Centre-Val de Loire": ["Loiret (45)","Loir-et-Cher (41)","Indre-et-Loire (37)","Cher (18)","Indre (36)","Eure-et-Loir (28)"],
+  "Grand Est": ["Bas-Rhin (67)","Haut-Rhin (68)","Moselle (57)","Meurthe-et-Moselle (54)","Meuse (55)","Marne (51)","Aube (10)","Haute-Marne (52)","Ardennes (08)"],
+  "Bourgogne-Franche-Comté": ["Côte-d'Or (21)","Saône-et-Loire (71)","Nièvre (58)","Yonne (89)","Doubs (25)","Jura (39)","Haute-Saône (70)","Territoire de Belfort (90)"],
+  "Nouvelle-Aquitaine": ["Gironde (33)","Dordogne (24)","Lot-et-Garonne (47)","Charente (16)","Deux-Sèvres (79)","Vienne (86)","Haute-Vienne (87)","Corrèze (19)","Creuse (23)","Charente-Maritime (17)","Pyrénées-Atlantiques (64)","Landes (40)"],
+  "Occitanie": ["Hérault (34)","Gard (30)","Haute-Garonne (31)","Pyrénées-Orientales (66)","Aude (11)","Tarn (81)","Aveyron (12)","Lot (46)","Tarn-et-Garonne (82)","Gers (32)","Hautes-Pyrénées (65)","Ariège (09)","Lozère (48)"],
+  "Auvergne-Rhône-Alpes": ["Rhône (69)","Isère (38)","Ain (01)","Savoie (73)","Haute-Savoie (74)","Loire (42)","Puy-de-Dôme (63)","Allier (03)","Cantal (15)","Haute-Loire (43)","Ardèche (07)","Drôme (26)"],
+  "Provence-Alpes-Côte d'Azur": ["Bouches-du-Rhône (13)","Var (83)","Alpes-Maritimes (06)","Vaucluse (84)","Alpes-de-Haute-Provence (04)","Hautes-Alpes (05)"],
+  "Corse": ["Haute-Corse (2B)","Corse-du-Sud (2A)"]
+};
+
+// ── TOOLTIP ──
+const tooltip = document.getElementById('tooltip');
+let currentTarget = null;
+
+function showTooltip(el, e) {
+  const d = el.dataset;
+  document.getElementById('tt-region').textContent  = d.region;
+  document.getElementById('tt-dept').textContent    = d.dept || d.city || '';
+  const price = parseInt(d.price);
+  document.getElementById('tt-price').innerHTML = price.toLocaleString('fr-FR') + ' <span>€/m²</span>';
+  const change = parseFloat(d.change || 0);
+  const cEl = document.getElementById('tt-change');
+  if (d.change) {
+    cEl.className = 'tt-change ' + (change >= 0 ? 'up' : 'down');
+    cEl.textContent = (change >= 0 ? '▲ +' : '▼ ') + Math.abs(change).toFixed(1) + '% sur 12 mois';
+  } else {
+    cEl.textContent = '';
+  }
+  positionTooltip(e);
+  tooltip.classList.add('visible');
+}
+
+function positionTooltip(e) {
+  const tw = 240, th = 130;
+  let x = e.clientX + 16, y = e.clientY - 20;
+  if (x + tw > window.innerWidth)  x = e.clientX - tw - 10;
+  if (y + th > window.innerHeight) y = e.clientY - th - 10;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top  = y + 'px';
+}
+
+function hideTooltip() { tooltip.classList.remove('visible'); }
+
+// Regions
+document.querySelectorAll('.region-path').forEach(el => {
+  el.addEventListener('mouseenter', e => { currentTarget = el; showTooltip(el, e); });
+  el.addEventListener('mousemove',  e => positionTooltip(e));
+  el.addEventListener('mouseleave', () => { currentTarget = null; hideTooltip(); });
+  el.addEventListener('dblclick',   () => openModal(el.dataset.region, el.dataset.price));
+});
+
+// City dots
+document.querySelectorAll('.city-dot').forEach(el => {
+  el.addEventListener('mouseenter', e => showTooltip(el, e));
+  el.addEventListener('mousemove',  e => positionTooltip(e));
+  el.addEventListener('mouseleave', hideTooltip);
+  el.addEventListener('dblclick',   () => openModal(el.dataset.region, el.dataset.price, el.dataset.city));
+});
+
+// ── MODAL ──
+function openModal(region, price, city) {
+  document.getElementById('modal-region-name').textContent = city || region || 'France';
+  const regionSel = document.getElementById('form-region-select');
+  for (let opt of regionSel.options) {
+    if (opt.value === region) { regionSel.value = region; updateDepts(region); break; }
+  }
+  if (city) document.getElementById('form-city-input').value = city;
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+// ── DEPARTMENT DROPDOWN ──
+function updateDepts(region) {
+  const sel = document.getElementById('form-dept-select');
+  sel.innerHTML = '<option value="">— Choisir —</option>';
+  (deptsByRegion[region] || []).forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d; opt.textContent = d;
+    sel.appendChild(opt);
+  });
+}
+document.getElementById('form-region-select').addEventListener('change', e => updateDepts(e.target.value));
+
+// ── COUNTER BUTTONS ──
+const counters = { bedrooms: 2, living: 1 };
+function changeNum(key, delta) {
+  counters[key] = Math.max(0, counters[key] + delta);
+  document.getElementById(key + '-display').textContent = counters[key];
+  document.getElementById(key + '-val').value = counters[key];
+}
+
+// ── BUDGET SLIDER ──
+function updateBudget(val) {
+  const v = parseInt(val);
+  document.getElementById('budget-label').textContent = v >= 1000000
+    ? (v/1000000).toLocaleString('fr-FR', {minimumFractionDigits: v%1000000 ? 1 : 0}) + ' M'
+    : (v/1000).toLocaleString('fr-FR') + ' K';
+  document.getElementById('budget-val').value = v;
+  const pct = ((v - 100000) / (10000000 - 100000) * 100).toFixed(1) + '%';
+  document.getElementById('budget-range').style.setProperty('--val', pct);
+}
+
+// ── CHECKBOX STYLING ──
+document.querySelectorAll('.check-item input[type=checkbox]').forEach(cb => {
+  cb.addEventListener('change', () => cb.closest('.check-item').classList.toggle('checked', cb.checked));
+});
+
+// ── FORM SUBMIT ──
+function handleSubmit(e) {
+  e.preventDefault();
+  // Simulate submission — in Wix this would connect to Wix Forms / Automations
+  document.getElementById('search-form').style.display = 'none';
+  document.getElementById('success-msg').classList.add('visible');
+  // In production: send to Wix Inbox / CRM via Wix Forms webhook
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>
