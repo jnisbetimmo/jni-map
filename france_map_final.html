@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recherche Immobilière France | James Nisbet Immobilier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" crossorigin="anonymous"></script>
+<style>
+:root {
+  --navy:#1B2A4A; --gold:#C9A96E; --gold-dk:#A07840;
+  --slate:#2C5F8A; --grey:#2E2E2E; --cream:#F8F5F0; --white:#fff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;background:var(--navy);color:var(--white);font-family:'Jost',sans-serif}
+.page-header{text-align:center;padding:30px 20px 12px}
+.page-header h1{font-family:'Cormorant Garamond',serif;font-size:clamp(22px,3.5vw,40px);font-weight:600;line-height:1.1}
+.page-header h1 em{color:var(--gold);font-style:normal}
+.page-header p{margin-top:6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4)}
+.hdiv{width:44px;height:2px;background:var(--gold);margin:10px auto}
+/* LEGEND */
+.legend{display:flex;align-items:center;justify-content:center;gap:10px;padding:6px 20px 14px;flex-wrap:wrap}
+.leg-lbl{font-size:10px;color:rgba(255,255,255,.38);letter-spacing:.06em}
+.leg-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;width:200px;flex-shrink:0}
+.leg-bar span{flex:1}
+.lc1{background:#7ecbf7}.lc2{background:#52b69a}.lc3{background:#f4a261}.lc4{background:#e07b39}.lc5{background:#e63946}
+.leg-vals{display:flex;justify-content:space-between;width:200px;font-size:9px;color:rgba(255,255,255,.3);margin-top:2px}
+/* MAP */
+#map-container{width:100%;max-width:800px;margin:0 auto;padding:0 10px;position:relative}
+#map-svg{width:100%;height:auto;display:block}
+.dept-path{stroke:rgba(255,255,255,.18);stroke-width:.5;cursor:pointer;transition:filter .12s,opacity .12s}
+.dept-path:hover{stroke:var(--gold);stroke-width:1.5;opacity:.8;filter:brightness(1.2)}
+.dept-lbl{fill:rgba(255,255,255,.55);font-family:'Jost',sans-serif;font-size:5.5px;font-weight:500;pointer-events:none;text-anchor:middle;dominant-baseline:central}
+/* LOADING */
+#map-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(27,42,74,.85);border-radius:8px;z-index:50}
+#map-loading.hidden{display:none}
+.spinner{width:32px;height:32px;border:3px solid rgba(201,169,110,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#map-loading p{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.1em}
+/* TOOLTIP */
+#tt{position:fixed;background:rgba(10,18,38,.97);border:1px solid var(--gold);border-radius:10px;padding:13px 16px;pointer-events:none;opacity:0;transition:opacity .12s;z-index:9999;min-width:220px;max-width:270px;box-shadow:0 8px 32px rgba(0,0,0,.7)}
+#tt.on{opacity:1}
+.tt-name{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--gold)}
+.tt-region{font-size:9.5px;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase;margin:2px 0 8px}
+.tt-price{font-size:22px;font-weight:600;color:var(--white)}
+.tt-price span{font-size:11px;font-weight:300;color:rgba(255,255,255,.4)}
+.tt-change{font-size:10.5px;margin-top:3px}
+.up{color:#52b69a}.dn{color:#e63946}
+.tt-pref{margin-top:9px;padding-top:7px;border-top:1px solid rgba(201,169,110,.15);font-size:10.5px;color:rgba(255,255,255,.6);line-height:1.7}
+.tt-pref strong{color:var(--gold);font-weight:500}
+.tt-hint{margin-top:6px;font-size:9px;color:rgba(201,169,110,.45);letter-spacing:.06em}
+/* HINT BAR */
+.hint{text-align:center;font-size:11px;color:rgba(255,255,255,.28);padding:8px 20px 6px;letter-spacing:.07em}
+.hint strong{color:rgba(201,169,110,.7);font-weight:500}
+.src{text-align:center;font-size:9.5px;color:rgba(255,255,255,.18);padding:4px 20px 20px;letter-spacing:.05em}
+/* MODAL */
+#overlay{position:fixed;inset:0;background:rgba(5,12,28,.92);backdrop-filter:blur(8px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:10px;opacity:0;pointer-events:none;transition:opacity .2s}
+#overlay.open{opacity:1;pointer-events:all}
+#modal{background:var(--cream);color:var(--grey);border-radius:12px;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.75);transform:translateY(20px);transition:transform .22s}
+#overlay.open #modal{transform:translateY(0)}
+.mhdr{background:var(--navy);padding:16px 20px 12px;border-radius:12px 12px 0 0;position:sticky;top:0;z-index:5}
+.mhdr h2{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--white)}
+.mhdr h2 em{color:var(--gold);font-style:normal}
+.mhdr p{font-size:9.5px;color:rgba(255,255,255,.38);margin-top:2px;letter-spacing:.07em;text-transform:uppercase}
+.mcls{position:absolute;top:12px;right:14px;background:none;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.45);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.mcls:hover{border-color:var(--gold);color:var(--gold)}
+.mbdy{padding:16px 18px 20px}
+.fsec{margin-bottom:16px}
+.fsec-t{font-family:'Cormorant Garamond',serif;font-size:12.5px;font-weight:600;color:var(--navy);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(27,42,74,.1);display:flex;align-items:center;gap:6px}
+.fsec-t::before{content:'';width:3px;height:11px;background:var(--gold);border-radius:2px;flex-shrink:0}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px}
+.fp{display:flex;flex-direction:column;gap:3px}
+label{font-size:9.5px;font-weight:600;letter-spacing:.09em;color:var(--navy);opacity:.55;text-transform:uppercase}
+input,select,textarea{background:var(--white);border:1px solid rgba(27,42,74,.12);border-radius:5px;padding:7px 9px;font-family:'Jost',sans-serif;font-size:12.5px;color:var(--grey);width:100%;appearance:none;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,169,110,.12)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231B2A4A' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:26px}
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:5px}
+.ci{display:flex;align-items:center;gap:7px;padding:6px 9px;background:var(--white);border:1px solid rgba(27,42,74,.1);border-radius:5px;cursor:pointer;font-size:11.5px;color:var(--grey);transition:border-color .12s}
+.ci:hover{border-color:var(--gold)}
+.ci input[type=checkbox]{width:12px;height:12px;accent-color:var(--navy);padding:0;flex-shrink:0}
+.nr{display:flex;gap:6px;align-items:center}
+.nb{width:26px;height:26px;background:var(--navy);color:var(--white);border:none;border-radius:4px;font-size:15px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .12s}
+.nb:hover{background:var(--gold-dk)}
+.nd{min-width:28px;text-align:center;font-weight:600;font-size:13px;color:var(--navy)}
+.bv-display{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--navy);margin-bottom:5px}
+.bv-display span{font-size:13px;font-weight:400;color:rgba(46,46,46,.38)}
+input[type=range]{padding:0;height:4px;border-radius:4px;accent-color:var(--navy);border:none;cursor:pointer}
+.btn-sub{width:100%;padding:13px;background:var(--navy);color:var(--white);border:none;border-radius:7px;font-family:'Jost',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:background .15s}
+.btn-sub:hover{background:var(--gold-dk)}
+.ok-wrap{display:none;text-align:center;padding:38px 22px}
+.ok-wrap.on{display:block}
+.ok-icon{width:52px;height:52px;background:rgba(27,42,74,.08);border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.ok-wrap h3{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--navy);margin-bottom:6px}
+.ok-wrap p{font-size:11px;color:rgba(46,46,46,.5)}
+#modal::-webkit-scrollbar{width:3px}
+#modal::-webkit-scrollbar-thumb{background:rgba(27,42,74,.12);border-radius:3px}
+@media(max-width:480px){
+  .mbdy{padding:12px 12px 16px}
+  .fg,.cg{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Recherche Immobilière<br><em>Partout en France</em></h1>
+  <div class="hdiv"></div>
+  <p>Prix au m² · 96 départements · Mis à jour en temps réel</p>
+</div>
+
+<div class="legend">
+  <span class="leg-lbl">Bas</span>
+  <div>
+    <div class="leg-bar">
+      <span class="lc1"></span><span class="lc2"></span><span class="lc3"></span><span class="lc4"></span><span class="lc5"></span>
+    </div>
+    <div class="leg-vals">
+      <span>&lt;1 500€</span><span>2 500€</span><span>3 500€</span><span>5 000€</span><span>10 000€+</span>
+    </div>
+  </div>
+  <span class="leg-lbl">Élevé</span>
+</div>
+
+<div id="map-container">
+  <div id="map-loading">
+    <div class="spinner"></div>
+    <p>Chargement des données…</p>
+  </div>
+  <svg id="map-svg" viewBox="0 0 800 820"></svg>
+</div>
+
+<div class="hint"><strong>Survolez</strong> un département · <strong>Double-cliquez</strong> pour lancer une recherche</div>
+<div class="src">Prix indicatifs au m² · Sources : Notaires de France · Données mises à jour trimestriellement depuis le CMS James Nisbet Immobilier</div>
+
+<div id="tt">
+  <div class="tt-name" id="tt-name"></div>
+  <div class="tt-region" id="tt-region"></div>
+  <div class="tt-price" id="tt-price"></div>
+  <div class="tt-change" id="tt-change"></div>
+  <div class="tt-pref" id="tt-pref"></div>
+  <div class="tt-hint">Double-cliquez pour rechercher dans ce département</div>
+</div>
+
+<div id="overlay">
+ <div id="modal">
+  <div class="mhdr">
+    <h2>Recherche — <em id="m-dept"></em></h2>
+    <p>Service confidentiel · Réponse sous 24h ouvrées · Sans engagement</p>
+    <button class="mcls" onclick="closeModal()" aria-label="Fermer">✕</button>
+  </div>
+  <div class="mbdy">
+   <form id="search-form" onsubmit="submitForm(event)">
+    <div class="fsec">
+     <div class="fsec-t">Vos coordonnées</div>
+     <div class="fg">
+      <div class="fp"><label>Titre</label><select name="title"><option>—</option><option>M.</option><option>Mme</option><option>Dr</option><option>Me</option></select></div>
+      <div class="fp"><label>Prénom *</label><input type="text" name="firstname" required placeholder="Jean"></div>
+      <div class="fp"><label>Nom *</label><input type="text" name="lastname" required placeholder="Dupont"></div>
+      <div class="fp"><label>Email *</label><input type="email" name="email" required placeholder="jean@email.com"></div>
+      <div class="fp"><label>Téléphone</label><input type="tel" name="phone" placeholder="+33 6 00 00 00 00"></div>
+     </div>
+    </div>
+    <div class="fsec">
+     <div class="fsec-t">Localisation</div>
+     <div class="fg">
+      <div class="fp"><label>Région</label>
+       <select name="region" id="f-region" onchange="updateDepts(this.value)">
+        <option value="">— Toute la France —</option>
+        <option>Île-de-France</option><option>Hauts-de-France</option><option>Normandie</option>
+        <option>Bretagne</option><option>Pays de la Loire</option><option>Centre-Val de Loire</option>
+        <option>Grand Est</option><option>Bourgogne-Franche-Comté</option>
+        <option>Nouvelle-Aquitaine</option><option>Occitanie</option>
+        <option>Auvergne-Rhône-Alpes</option><option>PACA</option><option>Corse</option>
+       </select></div>
+      <div class="fp"><label>Département</label><select name="dept" id="f-dept"><option value="">— Choisir —</option></select></div>
+      <div class="fp"><label>Ville / Commune</label><input type="text" name="city" id="f-city" placeholder="Ex : Bordeaux…"></div>
+      <div class="fp"><label>Rayon</label>
+       <select name="radius"><option>5 km</option><option>10 km</option><option selected>20 km</option><option>30 km</option><option>50 km</option><option>Pas de limite</option></select></div>
+     </div>
+    </div>
+    <div class="fsec">
+     <div class="fsec-t">Type de bien</div>
+     <div class="cg">
+      <label class="ci"><input type="checkbox" name="type" value="chateau"> Château</label>
+      <label class="ci"><input type="checkbox" name="type" value="manoir"> Manoir / Bastide</label>
+      <label class="ci"><input type="checkbox" name="type" value="maison"> Maison / Villa</label>
+      <label class="ci"><input type="checkbox" name="type" value="pavillon"> Pavillon</label>
+      <label class="ci"><input type="checkbox" name="type" value="appart"> Appartement</label>
+      <label class="ci"><input type="checkbox" name="type" value="loft"> Loft / Duplex</label>
+      <label class="ci"><input type="checkbox" name="type" value="propriete"> Propriété d'exception</label>
+      <label class="ci"><input type="checkbox" name="type" value="autre"> Autre</label>
+     </div>
+    </div>
+    <div class="fsec">
+     <div class="fsec-t">Caractéristiques</div>
+     <div class="fg">
+      <div class="fp"><label>Chambres min.</label>
+       <div class="nr"><button type="button" class="nb" onclick="stepNum('beds',-1)">−</button><span class="nd" id="beds-d">2</span><button type="button" class="nb" onclick="stepNum('beds',1)">+</button><input type="hidden" name="beds" id="beds-v" value="2"></div></div>
+      <div class="fp"><label>Pièces de vie min.</label>
+       <div class="nr"><button type="button" class="nb" onclick="stepNum('living',-1)">−</button><span class="nd" id="living-d">1</span><button type="button" class="nb" onclick="stepNum('living',1)">+</button><input type="hidden" name="living" id="living-v" value="1"></div></div>
+      <div class="fp"><label>Surface min. m²</label><input type="number" name="surf_min" placeholder="80"></div>
+      <div class="fp"><label>Surface max. m²</label><input type="number" name="surf_max" placeholder="500"></div>
+      <div class="fp"><label>Terrain min. m²</label><input type="number" name="terrain" placeholder="500"></div>
+      <div class="fp"><label>DPE max.</label><select name="dpe"><option value="">Indifférent</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select></div>
+     </div>
+     <div style="margin-top:8px"><label style="display:block;margin-bottom:6px">Options souhaitées</label>
+      <div class="cg">
+       <label class="ci"><input type="checkbox" name="opt" value="parking"> Parking / Garage</label>
+       <label class="ci"><input type="checkbox" name="opt" value="piscine"> Piscine</label>
+       <label class="ci"><input type="checkbox" name="opt" value="jardin"> Jardin</label>
+       <label class="ci"><input type="checkbox" name="opt" value="terrasse"> Terrasse</label>
+       <label class="ci"><input type="checkbox" name="opt" value="cave"> Cave / Chai</label>
+       <label class="ci"><input type="checkbox" name="opt" value="dependances"> Dépendances</label>
+       <label class="ci"><input type="checkbox" name="opt" value="vue"> Vue dégagée</label>
+       <label class="ci"><input type="checkbox" name="opt" value="calme"> Environnement calme</label>
+       <label class="ci"><input type="checkbox" name="opt" value="plain-pied"> Plain-pied</label>
+       <label class="ci"><input type="checkbox" name="opt" value="neuf"> Neuf / VEFA</label>
+       <label class="ci"><input type="checkbox" name="opt" value="standing"> Standing</label>
+       <label class="ci"><input type="checkbox" name="opt" value="gardien"> Gardien</label>
+      </div>
+     </div>
+    </div>
+    <div class="fsec">
+     <div class="fsec-t">Budget maximum</div>
+     <div class="bv-display"><span id="budget-display">500 000</span> <span>€</span></div>
+     <input type="range" name="budget" id="budget-range" min="100000" max="10000000" step="50000" value="500000" oninput="updateBudget(this.value)" style="width:100%">
+     <div style="display:flex;justify-content:space-between;font-size:9px;color:rgba(46,46,46,.3);margin-top:2px"><span>100K</span><span>500K</span><span>1M</span><span>3M</span><span>10M€</span></div>
+    </div>
+    <div class="fsec">
+     <div class="fsec-t">Services complémentaires</div>
+     <div class="cg">
+      <label class="ci"><input type="checkbox" name="svc" value="notaire"> Notaire</label>
+      <label class="ci"><input type="checkbox" name="svc" value="geometre"> Géomètre-expert</label>
+      <label class="ci"><input type="checkbox" name="svc" value="architecte"> Architecte</label>
+      <label class="ci"><input type="checkbox" name="svc" value="decorateur"> Décorateur</label>
+      <label class="ci"><input type="checkbox" name="svc" value="finance"> Courtier financement</label>
+      <label class="ci"><input type="checkbox" name="svc" value="patrimoine"> Gestion patrimoine</label>
+      <label class="ci"><input type="checkbox" name="svc" value="demenagement"> Déménagement</label>
+      <label class="ci"><input type="checkbox" name="svc" value="conciergerie"> Conciergerie</label>
+      <label class="ci"><input type="checkbox" name="svc" value="diagnostics"> Diagnostics</label>
+      <label class="ci"><input type="checkbox" name="svc" value="assurance"> Assurance</label>
+      <label class="ci"><input type="checkbox" name="svc" value="fiscal"> Conseil fiscal</label>
+      <label class="ci"><input type="checkbox" name="svc" value="autre-svc"> Autre</label>
+     </div>
+    </div>
+    <div class="fsec">
+     <div class="fsec-t">Informations complémentaires</div>
+     <div class="fp" style="grid-column:1/-1"><label>Décrivez votre projet</label>
+      <textarea name="message" rows="3" placeholder="Contexte, délai, contraintes particulières…"></textarea></div>
+     <div style="margin-top:10px;padding:10px;background:rgba(27,42,74,.05);border-radius:5px;border-left:3px solid var(--gold)">
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;opacity:1">
+       <input type="checkbox" name="rgpd" required style="width:12px;height:12px;accent-color:var(--navy);padding:0;flex-shrink:0;margin-top:2px">
+       <span style="font-size:10.5px;color:rgba(46,46,46,.5);line-height:1.5">J'accepte que mes données soient traitées par EI Alexander Nisbet (James Nisbet Immobilier) conformément à la <a href="/mentions-legales" style="color:var(--gold-dk)">politique RGPD</a>.</span>
+      </label>
+     </div>
+    </div>
+    <button type="submit" class="btn-sub">Envoyer ma demande de recherche</button>
+   </form>
+   <div class="ok-wrap" id="ok-wrap">
+    <div class="ok-icon">✓</div>
+    <h3>Demande envoyée</h3>
+    <p style="margin-top:8px">James Nisbet vous contactera sous 24h ouvrées en toute confidentialité.</p>
+    <button onclick="closeModal()" style="margin-top:20px;padding:9px 24px;background:var(--navy);color:var(--white);border:none;border-radius:6px;font-family:Jost,sans-serif;font-size:10px;letter-spacing:.12em;cursor:pointer;text-transform:uppercase">Fermer</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<script>
+// ── INLINE GEOJSON MAP DATA ──────────────────────────────
+const GEOJSON = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"code":"01","nom":"Ain","region":"Auvergne-Rhône-Alpes","prefecture":"Bourg-en-Bresse","sous_prefectures":"Belley, Gex, Nantua"},"geometry":{"type":"Polygon","coordinates":[[[5.17,46.35],[5.63,46.52],[6.17,46.36],[6.02,45.85],[5.71,45.75],[5.36,45.83],[5.02,46.08],[5.17,46.35]]]}},{"type":"Feature","properties":{"code":"02","nom":"Aisne","region":"Hauts-de-France","prefecture":"Laon","sous_prefectures":"Château-Thierry, Soissons, Saint-Quentin"},"geometry":{"type":"Polygon","coordinates":[[[3.1,49.98],[4.23,50.1],[4.27,49.47],[3.65,49.08],[3.1,49.25],[2.7,49.35],[2.9,49.98],[3.1,49.98]]]}},{"type":"Feature","properties":{"code":"03","nom":"Allier","region":"Auvergne-Rhône-Alpes","prefecture":"Moulins","sous_prefectures":"Montluçon, Vichy"},"geometry":{"type":"Polygon","coordinates":[[[2.62,46.78],[3.55,46.88],[3.95,46.42],[3.74,45.95],[2.97,45.97],[2.55,46.2],[2.62,46.78]]]}},{"type":"Feature","properties":{"code":"04","nom":"Alpes-de-Haute-Provence","region":"PACA","prefecture":"Digne-les-Bains","sous_prefectures":"Barcelonnette, Forcalquier"},"geometry":{"type":"Polygon","coordinates":[[[5.95,44.62],[6.9,44.68],[7.02,44.05],[6.37,43.74],[5.73,43.88],[5.68,44.25],[5.95,44.62]]]}},{"type":"Feature","properties":{"code":"05","nom":"Hautes-Alpes","region":"PACA","prefecture":"Gap","sous_prefectures":"Briançon"},"geometry":{"type":"Polygon","coordinates":[[[6.37,44.95],[7.15,44.85],[7.02,44.05],[6.37,43.74],[6.0,44.25],[6.37,44.95]]]}},{"type":"Feature","properties":{"code":"06","nom":"Alpes-Maritimes","region":"PACA","prefecture":"Nice","sous_prefectures":"Antibes, Grasse"},"geometry":{"type":"Polygon","coordinates":[[[6.95,44.35],[7.7,44.12],[7.65,43.57],[7.1,43.52],[6.53,43.75],[6.95,44.35]]]}},{"type":"Feature","properties":{"code":"07","nom":"Ardèche","region":"Auvergne-Rhône-Alpes","prefecture":"Privas","sous_prefectures":"Largentière, Tournon"},"geometry":{"type":"Polygon","coordinates":[[[4.02,45.62],[4.82,45.52],[4.88,44.75],[4.35,44.37],[3.95,44.6],[3.9,45.2],[4.02,45.62]]]}},{"type":"Feature","properties":{"code":"08","nom":"Ardennes","region":"Grand Est","prefecture":"Charleville-Mézières","sous_prefectures":"Rethel, Sedan"},"geometry":{"type":"Polygon","coordinates":[[[4.27,50.18],[5.0,50.12],[5.05,49.52],[4.35,49.05],[3.83,49.22],[3.97,49.77],[4.27,50.18]]]}},{"type":"Feature","properties":{"code":"09","nom":"Ariège","region":"Occitanie","prefecture":"Foix","sous_prefectures":"Pamiers, Saint-Girons"},"geometry":{"type":"Polygon","coordinates":[[[1.42,43.04],[2.18,43.1],[2.65,42.72],[1.72,42.48],[0.97,42.68],[1.42,43.04]]]}},{"type":"Feature","properties":{"code":"10","nom":"Aube","region":"Grand Est","prefecture":"Troyes","sous_prefectures":"Bar-sur-Aube, Nogent-sur-Seine"},"geometry":{"type":"Polygon","coordinates":[[[3.6,48.73],[4.65,48.75],[4.7,48.08],[3.97,47.98],[3.32,48.17],[3.6,48.73]]]}},{"type":"Feature","properties":{"code":"11","nom":"Aude","region":"Occitanie","prefecture":"Carcassonne","sous_prefectures":"Limoux, Narbonne"},"geometry":{"type":"Polygon","coordinates":[[[2.2,43.45],[3.25,43.45],[3.25,42.88],[2.55,42.65],[1.88,42.85],[2.2,43.45]]]}},{"type":"Feature","properties":{"code":"12","nom":"Aveyron","region":"Occitanie","prefecture":"Rodez","sous_prefectures":"Millau, Villefranche-de-Rouergue"},"geometry":{"type":"Polygon","coordinates":[[[2.17,44.73],[3.12,44.8],[3.45,44.2],[3.05,43.88],[2.38,43.65],[1.97,44.1],[2.17,44.73]]]}},{"type":"Feature","properties":{"code":"13","nom":"Bouches-du-Rhône","region":"PACA","prefecture":"Marseille","sous_prefectures":"Aix-en-Provence, Arles, Istres"},"geometry":{"type":"Polygon","coordinates":[[[4.72,43.85],[5.68,43.88],[5.68,43.18],[5.05,43.1],[4.37,43.35],[4.72,43.85]]]}},{"type":"Feature","properties":{"code":"14","nom":"Calvados","region":"Normandie","prefecture":"Caen","sous_prefectures":"Bayeux, Lisieux, Vire"},"geometry":{"type":"Polygon","coordinates":[[[-0.82,49.42],[-0.1,49.4],[0.38,49.12],[0.22,48.85],[-0.37,48.72],[-0.97,48.98],[-0.82,49.42]]]}},{"type":"Feature","properties":{"code":"15","nom":"Cantal","region":"Auvergne-Rhône-Alpes","prefecture":"Aurillac","sous_prefectures":"Mauriac, Saint-Flour"},"geometry":{"type":"Polygon","coordinates":[[[2.08,45.42],[3.17,45.38],[3.45,44.75],[2.92,44.48],[2.25,44.62],[1.97,45.1],[2.08,45.42]]]}},{"type":"Feature","properties":{"code":"16","nom":"Charente","region":"Nouvelle-Aquitaine","prefecture":"Angoulême","sous_prefectures":"Cognac, Confolens"},"geometry":{"type":"Polygon","coordinates":[[[-0.35,46.08],[0.98,46.12],[1.0,45.5],[0.17,45.2],[-0.32,45.38],[-0.35,46.08]]]}},{"type":"Feature","properties":{"code":"17","nom":"Charente-Maritime","region":"Nouvelle-Aquitaine","prefecture":"La Rochelle","sous_prefectures":"Rochefort, Saintes"},"geometry":{"type":"Polygon","coordinates":[[[-1.52,46.32],[-0.35,46.08],[-0.32,45.38],[-1.0,45.35],[-1.55,45.73],[-1.52,46.32]]]}},{"type":"Feature","properties":{"code":"18","nom":"Cher","region":"Centre-Val de Loire","prefecture":"Bourges","sous_prefectures":"Saint-Amand-Montrond, Vierzon"},"geometry":{"type":"Polygon","coordinates":[[[1.9,47.48],[3.05,47.5],[3.1,46.78],[2.62,46.42],[1.77,46.5],[1.9,47.48]]]}},{"type":"Feature","properties":{"code":"19","nom":"Corrèze","region":"Nouvelle-Aquitaine","prefecture":"Tulle","sous_prefectures":"Brive-la-Gaillarde, Ussel"},"geometry":{"type":"Polygon","coordinates":[[[1.37,45.62],[2.35,45.68],[2.6,45.18],[2.08,44.85],[1.38,44.98],[1.37,45.62]]]}},{"type":"Feature","properties":{"code":"21","nom":"Côte-d'Or","region":"Bourgogne-Franche-Comté","prefecture":"Dijon","sous_prefectures":"Beaune, Montbard"},"geometry":{"type":"Polygon","coordinates":[[[4.05,47.98],[5.42,48.0],[5.45,47.25],[4.85,46.98],[4.05,47.08],[3.68,47.45],[4.05,47.98]]]}},{"type":"Feature","properties":{"code":"22","nom":"Côtes-d'Armor","region":"Bretagne","prefecture":"Saint-Brieuc","sous_prefectures":"Dinan, Guingamp, Lannion"},"geometry":{"type":"Polygon","coordinates":[[[-3.68,48.75],[-1.85,48.75],[-1.72,48.35],[-2.72,48.07],[-3.75,48.18],[-3.68,48.75]]]}},{"type":"Feature","properties":{"code":"23","nom":"Creuse","region":"Nouvelle-Aquitaine","prefecture":"Guéret","sous_prefectures":"Aubusson"},"geometry":{"type":"Polygon","coordinates":[[[1.57,46.22],[2.62,46.28],[2.62,45.72],[1.97,45.48],[1.38,45.68],[1.57,46.22]]]}},{"type":"Feature","properties":{"code":"24","nom":"Dordogne","region":"Nouvelle-Aquitaine","prefecture":"Périgueux","sous_prefectures":"Bergerac, Nontron, Sarlat"},"geometry":{"type":"Polygon","coordinates":[[[0.07,45.62],[1.37,45.62],[1.37,44.98],[0.72,44.55],[0.07,44.72],[0.07,45.62]]]}},{"type":"Feature","properties":{"code":"25","nom":"Doubs","region":"Bourgogne-Franche-Comté","prefecture":"Besançon","sous_prefectures":"Montbéliard, Pontarlier"},"geometry":{"type":"Polygon","coordinates":[[[5.88,47.55],[7.08,47.45],[7.02,47.0],[6.42,46.85],[5.68,47.08],[5.88,47.55]]]}},{"type":"Feature","properties":{"code":"26","nom":"Drôme","region":"Auvergne-Rhône-Alpes","prefecture":"Valence","sous_prefectures":"Die, Nyons"},"geometry":{"type":"Polygon","coordinates":[[[4.68,45.25],[5.62,45.38],[5.73,44.72],[5.12,44.35],[4.42,44.48],[4.28,44.98],[4.68,45.25]]]}},{"type":"Feature","properties":{"code":"27","nom":"Eure","region":"Normandie","prefecture":"Évreux","sous_prefectures":"Les Andelys, Bernay"},"geometry":{"type":"Polygon","coordinates":[[[0.88,49.45],[1.97,49.48],[1.98,48.78],[1.22,48.55],[0.72,48.78],[0.88,49.45]]]}},{"type":"Feature","properties":{"code":"28","nom":"Eure-et-Loir","region":"Centre-Val de Loire","prefecture":"Chartres","sous_prefectures":"Dreux, Nogent-le-Rotrou"},"geometry":{"type":"Polygon","coordinates":[[[0.78,48.88],[1.98,48.85],[1.97,48.08],[1.27,47.85],[0.73,48.15],[0.78,48.88]]]}},{"type":"Feature","properties":{"code":"29","nom":"Finistère","region":"Bretagne","prefecture":"Quimper","sous_prefectures":"Brest, Châteaulin, Morlaix"},"geometry":{"type":"Polygon","coordinates":[[[-5.12,48.62],[-3.68,48.72],[-3.75,48.18],[-4.72,47.88],[-5.12,48.62]]]}},{"type":"Feature","properties":{"code":"2A","nom":"Corse-du-Sud","region":"Corse","prefecture":"Ajaccio","sous_prefectures":"Sartène"},"geometry":{"type":"Polygon","coordinates":[[[8.55,42.42],[9.55,41.85],[9.38,41.35],[8.55,41.35],[8.55,42.42]]]}},{"type":"Feature","properties":{"code":"2B","nom":"Haute-Corse","region":"Corse","prefecture":"Bastia","sous_prefectures":"Calvi, Corte"},"geometry":{"type":"Polygon","coordinates":[[[8.55,43.02],[9.55,43.02],[9.55,41.85],[8.55,42.42],[8.55,43.02]]]}},{"type":"Feature","properties":{"code":"30","nom":"Gard","region":"Occitanie","prefecture":"Nîmes","sous_prefectures":"Alès, Le Vigan"},"geometry":{"type":"Polygon","coordinates":[[[3.77,44.52],[4.85,44.48],[4.85,43.68],[4.05,43.48],[3.32,43.72],[3.77,44.52]]]}},{"type":"Feature","properties":{"code":"31","nom":"Haute-Garonne","region":"Occitanie","prefecture":"Toulouse","sous_prefectures":"Muret, Saint-Gaudens"},"geometry":{"type":"Polygon","coordinates":[[[0.65,43.68],[2.18,43.82],[2.18,43.12],[1.42,42.82],[0.47,42.95],[0.65,43.68]]]}},{"type":"Feature","properties":{"code":"32","nom":"Gers","region":"Occitanie","prefecture":"Auch","sous_prefectures":"Condom, Mirande"},"geometry":{"type":"Polygon","coordinates":[[[-0.22,44.12],[1.38,44.15],[1.38,43.68],[0.65,43.55],[-0.22,43.78],[-0.22,44.12]]]}},{"type":"Feature","properties":{"code":"33","nom":"Gironde","region":"Nouvelle-Aquitaine","prefecture":"Bordeaux","sous_prefectures":"Blaye, Langon, Lesparre, Libourne"},"geometry":{"type":"Polygon","coordinates":[[[-1.25,45.52],[0.07,45.52],[0.07,44.72],[-0.72,44.42],[-1.23,44.52],[-1.55,45.0],[-1.25,45.52]]]}},{"type":"Feature","properties":{"code":"34","nom":"Hérault","region":"Occitanie","prefecture":"Montpellier","sous_prefectures":"Béziers, Lodève"},"geometry":{"type":"Polygon","coordinates":[[[2.97,43.72],[4.05,43.68],[4.05,43.25],[3.22,43.1],[2.55,43.45],[2.97,43.72]]]}},{"type":"Feature","properties":{"code":"35","nom":"Ille-et-Vilaine","region":"Bretagne","prefecture":"Rennes","sous_prefectures":"Fougères, Redon, Saint-Malo"},"geometry":{"type":"Polygon","coordinates":[[[-2.08,48.68],[-1.0,48.72],[-1.08,48.12],[-1.75,47.88],[-2.27,48.12],[-2.08,48.68]]]}},{"type":"Feature","properties":{"code":"36","nom":"Indre","region":"Centre-Val de Loire","prefecture":"Châteauroux","sous_prefectures":"La Châtre, Le Blanc"},"geometry":{"type":"Polygon","coordinates":[[[0.98,47.22],[2.18,47.28],[2.18,46.62],[1.38,46.28],[0.88,46.52],[0.98,47.22]]]}},{"type":"Feature","properties":{"code":"37","nom":"Indre-et-Loire","region":"Centre-Val de Loire","prefecture":"Tours","sous_prefectures":"Chinon, Loches"},"geometry":{"type":"Polygon","coordinates":[[[0.07,47.52],[1.25,47.52],[1.25,47.0],[0.52,46.72],[0.07,46.95],[0.07,47.52]]]}},{"type":"Feature","properties":{"code":"38","nom":"Isère","region":"Auvergne-Rhône-Alpes","prefecture":"Grenoble","sous_prefectures":"La Tour-du-Pin, Vienne"},"geometry":{"type":"Polygon","coordinates":[[[4.75,45.88],[6.35,45.82],[6.35,44.98],[5.62,44.72],[4.88,44.98],[4.75,45.88]]]}},{"type":"Feature","properties":{"code":"39","nom":"Jura","region":"Bourgogne-Franche-Comté","prefecture":"Lons-le-Saunier","sous_prefectures":"Dole, Saint-Claude"},"geometry":{"type":"Polygon","coordinates":[[[5.17,47.15],[5.88,47.28],[5.88,46.42],[5.38,46.1],[4.85,46.25],[5.17,47.15]]]}},{"type":"Feature","properties":{"code":"40","nom":"Landes","region":"Nouvelle-Aquitaine","prefecture":"Mont-de-Marsan","sous_prefectures":"Dax"},"geometry":{"type":"Polygon","coordinates":[[[-1.55,44.52],[-0.22,44.65],[-0.22,43.72],[-0.97,43.35],[-1.72,43.65],[-1.55,44.52]]]}},{"type":"Feature","properties":{"code":"41","nom":"Loir-et-Cher","region":"Centre-Val de Loire","prefecture":"Blois","sous_prefectures":"Romorantin, Vendôme"},"geometry":{"type":"Polygon","coordinates":[[[0.75,47.88],[2.22,47.88],[2.22,47.22],[1.22,47.0],[0.75,47.25],[0.75,47.88]]]}},{"type":"Feature","properties":{"code":"42","nom":"Loire","region":"Auvergne-Rhône-Alpes","prefecture":"Saint-Étienne","sous_prefectures":"Montbrison, Roanne"},"geometry":{"type":"Polygon","coordinates":[[[3.68,46.28],[4.62,46.32],[4.85,45.72],[4.2,45.32],[3.75,45.58],[3.68,46.28]]]}},{"type":"Feature","properties":{"code":"43","nom":"Haute-Loire","region":"Auvergne-Rhône-Alpes","prefecture":"Le Puy-en-Velay","sous_prefectures":"Brioude, Yssingeaux"},"geometry":{"type":"Polygon","coordinates":[[[3.17,45.32],[4.2,45.35],[4.2,44.78],[3.52,44.48],[2.92,44.62],[3.17,45.32]]]}},{"type":"Feature","properties":{"code":"44","nom":"Loire-Atlantique","region":"Pays de la Loire","prefecture":"Nantes","sous_prefectures":"Ancenis, Châteaubriant, Saint-Nazaire"},"geometry":{"type":"Polygon","coordinates":[[[-2.52,47.55],[-1.08,47.55],[-1.08,47.0],[-1.72,46.65],[-2.52,46.88],[-2.52,47.55]]]}},{"type":"Feature","properties":{"code":"45","nom":"Loiret","region":"Centre-Val de Loire","prefecture":"Orléans","sous_prefectures":"Montargis, Pithiviers"},"geometry":{"type":"Polygon","coordinates":[[[1.52,48.45],[3.08,48.52],[3.08,47.82],[1.88,47.52],[1.52,47.88],[1.52,48.45]]]}},{"type":"Feature","properties":{"code":"46","nom":"Lot","region":"Occitanie","prefecture":"Cahors","sous_prefectures":"Figeac"},"geometry":{"type":"Polygon","coordinates":[[[1.08,44.98],[2.28,45.0],[2.35,44.38],[1.72,44.08],[1.08,44.35],[1.08,44.98]]]}},{"type":"Feature","properties":{"code":"47","nom":"Lot-et-Garonne","region":"Nouvelle-Aquitaine","prefecture":"Agen","sous_prefectures":"Marmande, Nérac, Villeneuve-sur-Lot"},"geometry":{"type":"Polygon","coordinates":[[[0.07,44.62],[1.38,44.68],[1.38,44.05],[0.65,43.65],[-0.22,43.72],[0.07,44.62]]]}},{"type":"Feature","properties":{"code":"48","nom":"Lozère","region":"Occitanie","prefecture":"Mende","sous_prefectures":"Florac"},"geometry":{"type":"Polygon","coordinates":[[[2.97,44.92],[3.97,44.85],[3.97,44.18],[3.17,43.95],[2.68,44.28],[2.97,44.92]]]}},{"type":"Feature","properties":{"code":"49","nom":"Maine-et-Loire","region":"Pays de la Loire","prefecture":"Angers","sous_prefectures":"Cholet, Saumur, Segré"},"geometry":{"type":"Polygon","coordinates":[[[-1.17,47.72],[0.07,47.75],[0.07,47.0],[-0.75,46.62],[-1.55,46.88],[-1.17,47.72]]]}},{"type":"Feature","properties":{"code":"50","nom":"Manche","region":"Normandie","prefecture":"Saint-Lô","sous_prefectures":"Avranches, Cherbourg"},"geometry":{"type":"Polygon","coordinates":[[[-1.95,49.62],[-1.12,49.72],[0.0,49.42],[-0.82,49.1],[-1.72,49.22],[-1.95,49.62]]]}},{"type":"Feature","properties":{"code":"51","nom":"Marne","region":"Grand Est","prefecture":"Châlons-en-Champagne","sous_prefectures":"Épernay, Reims, Vitry"},"geometry":{"type":"Polygon","coordinates":[[[3.32,49.32],[4.55,49.38],[4.75,48.62],[3.95,48.25],[3.18,48.45],[3.32,49.32]]]}},{"type":"Feature","properties":{"code":"52","nom":"Haute-Marne","region":"Grand Est","prefecture":"Chaumont","sous_prefectures":"Langres, Saint-Dizier"},"geometry":{"type":"Polygon","coordinates":[[[4.75,48.38],[5.85,48.45],[5.88,47.88],[5.17,47.55],[4.62,47.72],[4.75,48.38]]]}},{"type":"Feature","properties":{"code":"53","nom":"Mayenne","region":"Pays de la Loire","prefecture":"Laval","sous_prefectures":"Château-Gontier"},"geometry":{"type":"Polygon","coordinates":[[[-1.18,48.45],[0.18,48.42],[0.17,47.78],[-0.62,47.55],[-1.17,47.72],[-1.18,48.45]]]}},{"type":"Feature","properties":{"code":"54","nom":"Meurthe-et-Moselle","region":"Grand Est","prefecture":"Nancy","sous_prefectures":"Briey, Lunéville, Toul"},"geometry":{"type":"Polygon","coordinates":[[[5.68,49.52],[6.72,49.52],[6.75,48.78],[6.18,48.42],[5.72,48.55],[5.68,49.52]]]}},{"type":"Feature","properties":{"code":"55","nom":"Meuse","region":"Grand Est","prefecture":"Bar-le-Duc","sous_prefectures":"Commercy, Verdun"},"geometry":{"type":"Polygon","coordinates":[[[4.92,49.55],[5.88,49.52],[5.88,48.72],[5.17,48.45],[4.85,48.72],[4.92,49.55]]]}},{"type":"Feature","properties":{"code":"56","nom":"Morbihan","region":"Bretagne","prefecture":"Vannes","sous_prefectures":"Lorient, Pontivy"},"geometry":{"type":"Polygon","coordinates":[[[-3.62,48.05],[-2.08,48.02],[-2.27,47.55],[-3.08,47.38],[-3.62,47.62],[-3.62,48.05]]]}},{"type":"Feature","properties":{"code":"57","nom":"Moselle","region":"Grand Est","prefecture":"Metz","sous_prefectures":"Forbach, Sarrebourg, Thionville"},"geometry":{"type":"Polygon","coordinates":[[[6.18,49.52],[7.62,49.52],[7.62,48.85],[6.75,48.52],[6.25,48.78],[6.18,49.52]]]}},{"type":"Feature","properties":{"code":"58","nom":"Nièvre","region":"Bourgogne-Franche-Comté","prefecture":"Nevers","sous_prefectures":"Clamecy, Cosne-sur-Loire"},"geometry":{"type":"Polygon","coordinates":[[[3.05,47.52],[4.25,47.58],[4.25,46.75],[3.55,46.42],[2.95,46.62],[3.05,47.52]]]}},{"type":"Feature","properties":{"code":"59","nom":"Nord","region":"Hauts-de-France","prefecture":"Lille","sous_prefectures":"Avesnes, Cambrai, Douai, Dunkerque, Valenciennes"},"geometry":{"type":"Polygon","coordinates":[[[2.52,50.85],[4.28,50.85],[4.25,50.18],[3.1,50.05],[2.52,50.35],[2.52,50.85]]]}},{"type":"Feature","properties":{"code":"60","nom":"Oise","region":"Hauts-de-France","prefecture":"Beauvais","sous_prefectures":"Clermont, Compiègne, Senlis"},"geometry":{"type":"Polygon","coordinates":[[[1.72,49.55],[3.1,49.6],[3.1,48.85],[1.98,48.68],[1.72,49.0],[1.72,49.55]]]}},{"type":"Feature","properties":{"code":"61","nom":"Orne","region":"Normandie","prefecture":"Alençon","sous_prefectures":"Argentan, Mortagne-au-Perche"},"geometry":{"type":"Polygon","coordinates":[[[-0.82,49.05],[0.88,49.0],[0.88,48.35],[0.18,48.12],[-0.82,48.42],[-0.82,49.05]]]}},{"type":"Feature","properties":{"code":"62","nom":"Pas-de-Calais","region":"Hauts-de-France","prefecture":"Arras","sous_prefectures":"Boulogne, Béthune, Calais, Lens"},"geometry":{"type":"Polygon","coordinates":[[[1.55,51.0],[2.55,51.0],[2.52,50.35],[1.55,50.18],[1.15,50.55],[1.55,51.0]]]}},{"type":"Feature","properties":{"code":"63","nom":"Puy-de-Dôme","region":"Auvergne-Rhône-Alpes","prefecture":"Clermont-Ferrand","sous_prefectures":"Ambert, Issoire, Riom, Thiers"},"geometry":{"type":"Polygon","coordinates":[[[2.45,46.28],[3.68,46.35],[3.75,45.62],[3.17,45.28],[2.62,45.42],[2.45,46.28]]]}},{"type":"Feature","properties":{"code":"64","nom":"Pyrénées-Atlantiques","region":"Nouvelle-Aquitaine","prefecture":"Pau","sous_prefectures":"Bayonne, Oloron-Sainte-Marie"},"geometry":{"type":"Polygon","coordinates":[[[-1.72,43.75],[0.0,43.78],[0.0,42.95],[-1.05,42.78],[-1.75,43.32],[-1.72,43.75]]]}},{"type":"Feature","properties":{"code":"65","nom":"Hautes-Pyrénées","region":"Occitanie","prefecture":"Tarbes","sous_prefectures":"Argelès-Gazost, Bagnères"},"geometry":{"type":"Polygon","coordinates":[[[-0.32,43.75],[1.1,43.75],[0.97,43.18],[0.07,42.95],[-0.47,43.12],[-0.32,43.75]]]}},{"type":"Feature","properties":{"code":"66","nom":"Pyrénées-Orientales","region":"Occitanie","prefecture":"Perpignan","sous_prefectures":"Céret, Prades"},"geometry":{"type":"Polygon","coordinates":[[[1.72,43.0],[3.15,43.0],[3.15,42.45],[2.25,42.38],[1.42,42.55],[1.72,43.0]]]}},{"type":"Feature","properties":{"code":"67","nom":"Bas-Rhin","region":"Grand Est","prefecture":"Strasbourg","sous_prefectures":"Haguenau, Molsheim, Saverne, Sélestat"},"geometry":{"type":"Polygon","coordinates":[[[6.92,49.08],[8.25,49.1],[8.22,48.42],[7.42,48.12],[6.88,48.35],[6.92,49.08]]]}},{"type":"Feature","properties":{"code":"68","nom":"Haut-Rhin","region":"Grand Est","prefecture":"Colmar","sous_prefectures":"Altkirch, Guebwiller, Mulhouse"},"geometry":{"type":"Polygon","coordinates":[[[6.88,48.32],[7.65,48.35],[7.65,47.55],[7.08,47.42],[6.85,47.78],[6.88,48.32]]]}},{"type":"Feature","properties":{"code":"69","nom":"Rhône","region":"Auvergne-Rhône-Alpes","prefecture":"Lyon","sous_prefectures":"Villefranche-sur-Saône"},"geometry":{"type":"Polygon","coordinates":[[[4.35,46.35],[5.15,46.32],[5.15,45.62],[4.62,45.38],[4.08,45.62],[4.35,46.35]]]}},{"type":"Feature","properties":{"code":"70","nom":"Haute-Saône","region":"Bourgogne-Franche-Comté","prefecture":"Vesoul","sous_prefectures":"Lure"},"geometry":{"type":"Polygon","coordinates":[[[5.45,47.92],[6.85,47.92],[6.85,47.38],[6.05,47.08],[5.45,47.22],[5.45,47.92]]]}},{"type":"Feature","properties":{"code":"71","nom":"Saône-et-Loire","region":"Bourgogne-Franche-Comté","prefecture":"Mâcon","sous_prefectures":"Autun, Chalon-sur-Saône, Charolles, Louhans"},"geometry":{"type":"Polygon","coordinates":[[[3.85,47.12],[5.18,47.18],[5.18,46.15],[4.22,45.88],[3.68,46.22],[3.85,47.12]]]}},{"type":"Feature","properties":{"code":"72","nom":"Sarthe","region":"Pays de la Loire","prefecture":"Le Mans","sous_prefectures":"La Flèche, Mamers"},"geometry":{"type":"Polygon","coordinates":[[[-0.18,48.55],[1.25,48.55],[1.22,47.82],[0.35,47.55],[-0.18,47.78],[-0.18,48.55]]]}},{"type":"Feature","properties":{"code":"73","nom":"Savoie","region":"Auvergne-Rhône-Alpes","prefecture":"Chambéry","sous_prefectures":"Albertville, Saint-Jean-de-Maurienne"},"geometry":{"type":"Polygon","coordinates":[[[5.68,46.0],[7.18,45.82],[7.18,44.98],[6.38,45.12],[5.72,45.38],[5.68,46.0]]]}},{"type":"Feature","properties":{"code":"74","nom":"Haute-Savoie","region":"Auvergne-Rhône-Alpes","prefecture":"Annecy","sous_prefectures":"Bonneville, Saint-Julien, Thonon"},"geometry":{"type":"Polygon","coordinates":[[[5.88,46.42],[7.05,46.42],[7.05,45.72],[6.18,45.68],[5.68,46.0],[5.88,46.42]]]}},{"type":"Feature","properties":{"code":"75","nom":"Paris","region":"Île-de-France","prefecture":"Paris","sous_prefectures":""},"geometry":{"type":"Polygon","coordinates":[[[2.22,48.9],[2.47,48.9],[2.47,48.82],[2.22,48.82],[2.22,48.9]]]}},{"type":"Feature","properties":{"code":"76","nom":"Seine-Maritime","region":"Normandie","prefecture":"Rouen","sous_prefectures":"Dieppe, Le Havre"},"geometry":{"type":"Polygon","coordinates":[[[-0.2,49.95],[1.72,50.1],[1.97,49.45],[0.88,49.15],[-0.1,49.42],[-0.2,49.95]]]}},{"type":"Feature","properties":{"code":"77","nom":"Seine-et-Marne","region":"Île-de-France","prefecture":"Melun","sous_prefectures":"Fontainebleau, Meaux, Provins"},"geometry":{"type":"Polygon","coordinates":[[[2.48,49.15],[3.55,49.15],[3.55,48.12],[2.72,47.92],[2.22,48.18],[2.48,49.15]]]}},{"type":"Feature","properties":{"code":"78","nom":"Yvelines","region":"Île-de-France","prefecture":"Versailles","sous_prefectures":"Mantes-la-Jolie, Rambouillet"},"geometry":{"type":"Polygon","coordinates":[[[1.45,49.08],[2.25,49.1],[2.22,48.42],[1.45,48.52],[1.45,49.08]]]}},{"type":"Feature","properties":{"code":"79","nom":"Deux-Sèvres","region":"Nouvelle-Aquitaine","prefecture":"Niort","sous_prefectures":"Bressuire, Parthenay"},"geometry":{"type":"Polygon","coordinates":[[[-0.82,47.1],[0.27,47.12],[0.22,46.45],[-0.62,46.18],[-1.05,46.45],[-0.82,47.1]]]}},{"type":"Feature","properties":{"code":"80","nom":"Somme","region":"Hauts-de-France","prefecture":"Amiens","sous_prefectures":"Abbeville, Montdidier, Péronne"},"geometry":{"type":"Polygon","coordinates":[[[1.38,50.38],[3.18,50.42],[3.1,49.72],[1.72,49.52],[1.38,49.88],[1.38,50.38]]]}},{"type":"Feature","properties":{"code":"81","nom":"Tarn","region":"Occitanie","prefecture":"Albi","sous_prefectures":"Castres"},"geometry":{"type":"Polygon","coordinates":[[[1.68,44.0],[2.97,44.08],[3.05,43.45],[2.2,43.15],[1.62,43.52],[1.68,44.0]]]}},{"type":"Feature","properties":{"code":"82","nom":"Tarn-et-Garonne","region":"Occitanie","prefecture":"Montauban","sous_prefectures":"Castelsarrasin"},"geometry":{"type":"Polygon","coordinates":[[[0.92,44.35],[2.05,44.38],[2.05,43.75],[1.38,43.58],[0.92,43.82],[0.92,44.35]]]}},{"type":"Feature","properties":{"code":"83","nom":"Var","region":"PACA","prefecture":"Toulon","sous_prefectures":"Brignoles, Draguignan"},"geometry":{"type":"Polygon","coordinates":[[[5.68,43.72],[6.95,43.72],[7.02,43.25],[6.0,43.05],[5.35,43.25],[5.68,43.72]]]}},{"type":"Feature","properties":{"code":"84","nom":"Vaucluse","region":"PACA","prefecture":"Avignon","sous_prefectures":"Apt, Carpentras"},"geometry":{"type":"Polygon","coordinates":[[[4.62,44.42],[5.72,44.42],[5.72,43.68],[4.72,43.5],[4.35,43.95],[4.62,44.42]]]}},{"type":"Feature","properties":{"code":"85","nom":"Vendée","region":"Pays de la Loire","prefecture":"La Roche-sur-Yon","sous_prefectures":"Fontenay-le-Comte, Les Sables-d'Olonne"},"geometry":{"type":"Polygon","coordinates":[[[-2.52,47.12],[-0.82,47.1],[-1.05,46.45],[-2.0,46.25],[-2.52,46.62],[-2.52,47.12]]]}},{"type":"Feature","properties":{"code":"86","nom":"Vienne","region":"Nouvelle-Aquitaine","prefecture":"Poitiers","sous_prefectures":"Châtellerault, Montmorillon"},"geometry":{"type":"Polygon","coordinates":[[[0.07,47.18],[1.25,47.25],[1.22,46.52],[0.27,46.22],[-0.32,46.5],[0.07,47.18]]]}},{"type":"Feature","properties":{"code":"87","nom":"Haute-Vienne","region":"Nouvelle-Aquitaine","prefecture":"Limoges","sous_prefectures":"Bellac, Rochechouart"},"geometry":{"type":"Polygon","coordinates":[[[0.97,46.22],[2.05,46.28],[2.05,45.55],[1.37,45.32],[0.88,45.62],[0.97,46.22]]]}},{"type":"Feature","properties":{"code":"88","nom":"Vosges","region":"Grand Est","prefecture":"Épinal","sous_prefectures":"Neufchâteau, Saint-Dié"},"geometry":{"type":"Polygon","coordinates":[[[5.72,48.72],[7.22,48.72],[7.18,47.95],[6.42,47.72],[5.72,47.98],[5.72,48.72]]]}},{"type":"Feature","properties":{"code":"89","nom":"Yonne","region":"Bourgogne-Franche-Comté","prefecture":"Auxerre","sous_prefectures":"Avallon, Sens"},"geometry":{"type":"Polygon","coordinates":[[[2.9,48.38],[4.08,48.38],[4.05,47.48],[3.08,47.28],[2.62,47.55],[2.9,48.38]]]}},{"type":"Feature","properties":{"code":"90","nom":"Territoire de Belfort","region":"Bourgogne-Franche-Comté","prefecture":"Belfort","sous_prefectures":""},"geometry":{"type":"Polygon","coordinates":[[[6.82,47.82],[7.62,47.78],[7.62,47.42],[6.85,47.38],[6.82,47.82]]]}},{"type":"Feature","properties":{"code":"91","nom":"Essonne","region":"Île-de-France","prefecture":"Évry-Courcouronnes","sous_prefectures":"Étampes, Palaiseau"},"geometry":{"type":"Polygon","coordinates":[[[1.95,48.75],[2.72,48.75],[2.72,48.28],[1.95,48.25],[1.95,48.75]]]}},{"type":"Feature","properties":{"code":"92","nom":"Hauts-de-Seine","region":"Île-de-France","prefecture":"Nanterre","sous_prefectures":"Antony, Boulogne-Billancourt"},"geometry":{"type":"Polygon","coordinates":[[[2.17,48.95],[2.38,48.95],[2.38,48.8],[2.17,48.8],[2.17,48.95]]]}},{"type":"Feature","properties":{"code":"93","nom":"Seine-Saint-Denis","region":"Île-de-France","prefecture":"Bobigny","sous_prefectures":"Le Raincy, Saint-Denis"},"geometry":{"type":"Polygon","coordinates":[[[2.38,48.98],[2.67,48.98],[2.67,48.82],[2.38,48.82],[2.38,48.98]]]}},{"type":"Feature","properties":{"code":"94","nom":"Val-de-Marne","region":"Île-de-France","prefecture":"Créteil","sous_prefectures":"L'Haÿ-les-Roses, Nogent-sur-Marne"},"geometry":{"type":"Polygon","coordinates":[[[2.35,48.82],[2.67,48.82],[2.67,48.58],[2.35,48.58],[2.35,48.82]]]}},{"type":"Feature","properties":{"code":"95","nom":"Val-d'Oise","region":"Île-de-France","prefecture":"Cergy","sous_prefectures":"Argenteuil, Pontoise, Sarcelles"},"geometry":{"type":"Polygon","coordinates":[[[1.72,49.25],[2.67,49.25],[2.67,48.95],[1.72,48.92],[1.72,49.25]]]}}]};
+
+// ── WIX CMS PRICE DATA (live at load) ────────────────────
+const WIX_SITE = "8e4b9413-57b1-432c-ab01-9b62cebf85ac";
+let priceData = {};
+let mapReady = false;
+
+// Color scale
+function priceColor(p) {
+  if (!p) return 'rgba(255,255,255,0.08)';
+  if (p < 1500) return '#7ecbf7';
+  if (p < 2500) return '#52b69a';
+  if (p < 3500) return '#f4a261';
+  if (p < 5000) return '#e07b39';
+  return '#e63946';
+}
+
+// Load prices from Wix CMS
+async function loadPrices() {
+  try {
+    const res = await fetch(
+      'https://www.wixapis.com/wix-data/v2/items/query',
+      {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','wix-site-id':WIX_SITE},
+        body: JSON.stringify({
+          dataCollectionId: 'PrixDepartements',
+          query: {paging:{limit:200}}
+        })
+      }
+    );
+    if (!res.ok) throw new Error('API ' + res.status);
+    const json = await res.json();
+    (json.dataItems || []).forEach(item => {
+      const d = item.data;
+      if (d && d.codeDept) priceData[d.codeDept] = d;
+    });
+    console.log('Prices loaded:', Object.keys(priceData).length, 'departments');
+  } catch(e) {
+    console.warn('Price load failed, using fallback:', e.message);
+    // Fallback static prices if API fails
+    priceData = {};
+  }
+}
+
+// ── D3 MAP RENDER ──────────────────────────────────────────
+function renderMap() {
+  const svg = d3.select('#map-svg');
+  const W = 800, H = 820;
+
+  // D3 Mercator projection fitted to France bounds
+  const projection = d3.geoMercator()
+    .center([2.5, 46.5])
+    .scale(2600)
+    .translate([W/2, H/2]);
+
+  const path = d3.geoPath().projection(projection);
+
+  // Draw departments
+  svg.selectAll('.dept-path')
+    .data(GEOJSON.features)
+    .join('path')
+    .attr('class', 'dept-path')
+    .attr('d', path)
+    .attr('fill', d => {
+      const pd = priceData[d.properties.code];
+      return priceColor(pd ? pd.prixM2 : null);
+    })
+    .attr('data-code', d => d.properties.code)
+    .on('mouseenter', function(event, d) { showTooltip(event, d.properties.code); })
+    .on('mousemove', function(event) { moveTooltip(event); })
+    .on('mouseleave', hideTooltip)
+    .on('dblclick', (event, d) => openModal(d.properties.code));
+
+  // Department labels at centroids
+  GEOJSON.features.forEach(f => {
+    const c = path.centroid(f);
+    if (c && !isNaN(c[0]) && !isNaN(c[1])) {
+      svg.append('text')
+        .attr('class', 'dept-lbl')
+        .attr('x', c[0]).attr('y', c[1])
+        .text(f.properties.code);
+    }
+  });
+
+  document.getElementById('map-loading').classList.add('hidden');
+  mapReady = true;
+}
+
+// ── TOOLTIP ────────────────────────────────────────────────
+const tt = document.getElementById('tt');
+function showTooltip(event, code) {
+  const pd = priceData[code] || {};
+  const feat = GEOJSON.features.find(f => f.properties.code === code);
+  if (!feat) return;
+  const p = feat.properties;
+  
+  document.getElementById('tt-name').textContent = p.nom + ' (' + code + ')';
+  document.getElementById('tt-region').textContent = p.region;
+  
+  if (pd.prixM2) {
+    document.getElementById('tt-price').innerHTML = pd.prixM2.toLocaleString('fr-FR') + ' <span>€/m²</span>';
+    const ch = pd.variation12m || 0;
+    const cel = document.getElementById('tt-change');
+    cel.className = 'tt-change ' + (ch >= 0 ? 'up' : 'dn');
+    cel.textContent = (ch >= 0 ? '▲ +' : '▼ ') + Math.abs(ch).toFixed(1) + '% sur 12 mois';
+    document.getElementById('tt-pref').innerHTML =
+      '<strong>Préfecture :</strong> ' + (pd.prefecture || p.prefecture) + '<br>' +
+      '<strong>Sous-préf. :</strong> ' + (pd.sousPrefectures || p.sous_prefectures || '—');
+  } else {
+    document.getElementById('tt-price').textContent = 'Prix non disponible';
+    document.getElementById('tt-change').textContent = '';
+    document.getElementById('tt-pref').innerHTML =
+      '<strong>Préfecture :</strong> ' + p.prefecture;
+  }
+  
+  moveTooltip(event);
+  tt.classList.add('on');
+}
+function moveTooltip(event) {
+  let x = event.clientX + 14, y = event.clientY - 20;
+  if (x + 280 > window.innerWidth) x = event.clientX - 285;
+  if (y + 200 > window.innerHeight) y = event.clientY - 200;
+  tt.style.left = x + 'px'; tt.style.top = y + 'px';
+}
+function hideTooltip() { tt.classList.remove('on'); }
+
+// ── MODAL ──────────────────────────────────────────────────
+const DEPTS_BY_REGION = {
+  "Île-de-France":["Paris (75)","Seine-et-Marne (77)","Yvelines (78)","Essonne (91)","Hauts-de-Seine (92)","Seine-Saint-Denis (93)","Val-de-Marne (94)","Val-d'Oise (95)"],
+  "Hauts-de-France":["Nord (59)","Pas-de-Calais (62)","Somme (80)","Aisne (02)","Oise (60)"],
+  "Normandie":["Seine-Maritime (76)","Eure (27)","Calvados (14)","Manche (50)","Orne (61)"],
+  "Bretagne":["Finistère (29)","Côtes-d'Armor (22)","Morbihan (56)","Ille-et-Vilaine (35)"],
+  "Pays de la Loire":["Loire-Atlantique (44)","Maine-et-Loire (49)","Sarthe (72)","Mayenne (53)","Vendée (85)"],
+  "Centre-Val de Loire":["Loiret (45)","Loir-et-Cher (41)","Indre-et-Loire (37)","Cher (18)","Indre (36)","Eure-et-Loir (28)"],
+  "Grand Est":["Bas-Rhin (67)","Haut-Rhin (68)","Moselle (57)","Meurthe-et-Moselle (54)","Meuse (55)","Marne (51)","Aube (10)","Haute-Marne (52)","Ardennes (08)","Vosges (88)"],
+  "Bourgogne-Franche-Comté":["Côte-d'Or (21)","Saône-et-Loire (71)","Nièvre (58)","Yonne (89)","Doubs (25)","Jura (39)","Haute-Saône (70)","Territoire de Belfort (90)"],
+  "Nouvelle-Aquitaine":["Gironde (33)","Dordogne (24)","Lot-et-Garonne (47)","Charente (16)","Deux-Sèvres (79)","Vienne (86)","Haute-Vienne (87)","Corrèze (19)","Creuse (23)","Charente-Maritime (17)","Pyrénées-Atlantiques (64)","Landes (40)"],
+  "Occitanie":["Hérault (34)","Gard (30)","Haute-Garonne (31)","Pyrénées-Orientales (66)","Aude (11)","Tarn (81)","Aveyron (12)","Lot (46)","Tarn-et-Garonne (82)","Gers (32)","Hautes-Pyrénées (65)","Ariège (09)","Lozère (48)"],
+  "Auvergne-Rhône-Alpes":["Rhône (69)","Isère (38)","Ain (01)","Savoie (73)","Haute-Savoie (74)","Loire (42)","Puy-de-Dôme (63)","Allier (03)","Cantal (15)","Haute-Loire (43)","Ardèche (07)","Drôme (26)"],
+  "PACA":["Bouches-du-Rhône (13)","Var (83)","Alpes-Maritimes (06)","Vaucluse (84)","Alpes-de-Haute-Provence (04)","Hautes-Alpes (05)"],
+  "Corse":["Haute-Corse (2B)","Corse-du-Sud (2A)"]
+};
+
+function openModal(code) {
+  const feat = GEOJSON.features.find(f => f.properties.code === code);
+  const p = feat ? feat.properties : {};
+  const pd = priceData[code] || {};
+  document.getElementById('m-dept').textContent = p.nom + ' (' + code + ')';
+  // Pre-fill region/dept
+  const rs = document.getElementById('f-region');
+  if (p.region) {
+    [...rs.options].forEach(o => { if(o.value === p.region) rs.value = p.region; });
+    updateDepts(p.region);
+  }
+  setTimeout(() => {
+    const ds = document.getElementById('f-dept');
+    [...ds.options].forEach(o => { if(o.value.includes('('+code+')')) ds.value = o.value; });
+  }, 50);
+  if (pd.prefecture || p.prefecture) {
+    document.getElementById('f-city').value = pd.prefecture || p.prefecture;
+  }
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target.id === 'overlay') closeModal();
+});
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+function updateDepts(region) {
+  const s = document.getElementById('f-dept');
+  s.innerHTML = '<option value="">— Choisir —</option>';
+  (DEPTS_BY_REGION[region] || []).forEach(d => {
+    const o = document.createElement('option');
+    o.value = d; o.textContent = d; s.appendChild(o);
+  });
+}
+
+// Counter widget
+const counters = {beds:2, living:1};
+function stepNum(k, delta) {
+  counters[k] = Math.max(0, counters[k] + delta);
+  document.getElementById(k+'-d').textContent = counters[k];
+  document.getElementById(k+'-v').value = counters[k];
+}
+
+// Budget slider
+function updateBudget(v) {
+  v = parseInt(v);
+  document.getElementById('budget-display').textContent = v >= 1000000
+    ? (v/1000000).toLocaleString('fr-FR', {minimumFractionDigits: v%1000000 ? 1:0}) + ' M'
+    : (v/1000).toLocaleString('fr-FR') + ' K';
+}
+
+function submitForm(e) {
+  e.preventDefault();
+  document.getElementById('search-form').style.display = 'none';
+  document.getElementById('ok-wrap').classList.add('on');
+}
+
+// ── INIT ───────────────────────────────────────────────────
+(async function init() {
+  await loadPrices();
+  renderMap();
+})();
+</script>
+</body>
+</html>
