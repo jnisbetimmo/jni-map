@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estimation Immobilière — Bordeaux Métropole | James Nisbet Immobilier</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --navy:#1B2A4A; --navy-lt:#243660; --gold:#C9A96E; --gold-dk:#A07840;
+  --gold-lt:#F5E6CC; --gold-dim:#D4B97A; --slate:#2C5F8A; --grey:#2E2E2E;
+  --cream:#F8F5F0; --white:#FFFFFF; --mid:#E8E2D9;
+  --text-soft:rgba(27,42,74,.55);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--grey);overflow-x:hidden;-webkit-user-select:none;user-select:none}
+#copy-shield{position:fixed;inset:0;z-index:99999;background:var(--navy);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+#copy-shield p{color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:22px;text-align:center}
+#lang-toggle{position:fixed;top:16px;right:20px;z-index:9999}
+#lang-toggle-btn{background:rgba(27,42,74,.92);backdrop-filter:blur(8px);border:1px solid rgba(201,169,110,.35);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:'Jost',sans-serif;font-size:10px;font-weight:500;color:#fff;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:5px;transition:border-color .2s}
+#lang-toggle-btn:hover{border-color:var(--gold)}
+.lang-inactive{opacity:.35}.lang-sep{color:rgba(201,169,110,.4)}.lang-flag{font-size:13px}
+/* HEADER */
+.site-header{background:var(--navy);padding:12px 32px;display:flex;align-items:center;gap:18px;border-bottom:2px solid var(--gold)}
+.site-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;letter-spacing:.05em;color:var(--white)}
+.site-logo em{color:var(--gold);font-style:normal}
+.hdr-sep{width:1px;height:20px;background:rgba(201,169,110,.2)}
+.hdr-tag{font-size:10px;font-weight:400;color:rgba(255,255,255,.4);letter-spacing:.18em;text-transform:uppercase}
+.hdr-right{margin-left:auto;margin-right:72px}
+.hdr-updated{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;color:rgba(201,169,110,.5)}
+/* HERO */
+.hero{background:var(--navy);position:relative;overflow:hidden;padding:48px 40px 42px;text-align:center}
+.hero::before{content:'';position:absolute;inset:0;background:url('https://static.wixstatic.com/media/4be688_1cce8f7929274bc5b917beca1363dfc4~mv2.jpg') center/cover no-repeat;opacity:.12}
+.hero-inner{position:relative;z-index:1;max-width:700px;margin:0 auto}
+.hero-eyebrow{font-size:10px;font-weight:500;color:var(--gold);letter-spacing:.24em;text-transform:uppercase;margin-bottom:18px}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:clamp(30px,4.5vw,50px);font-weight:400;color:var(--white);line-height:1.18;margin-bottom:12px;letter-spacing:.01em}
+.hero h1 em{color:var(--gold);font-style:italic;font-weight:500}
+.hero-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(14px,1.8vw,18px);color:rgba(255,255,255,.55);line-height:1.7}
+/* SEARCH */
+.search-zone{background:var(--white);border-top:3px solid var(--gold);border-bottom:1px solid var(--mid);padding:22px 40px;box-shadow:0 4px 24px rgba(27,42,74,.08);position:relative;z-index:10}
+.search-inner{max-width:740px;margin:0 auto}
+.search-label{font-size:9px;font-weight:600;color:var(--navy);letter-spacing:.22em;text-transform:uppercase;display:block;margin-bottom:8px}
+.search-row{display:flex;gap:10px;flex-wrap:wrap}
+.addr-wrap{flex:1;min-width:260px;position:relative}
+#addr-input{width:100%;padding:12px 16px 12px 38px;background:var(--cream);border:1.5px solid var(--mid);border-radius:6px;font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--grey);transition:border-color .2s,background .2s}
+#addr-input::placeholder{color:var(--text-soft);font-style:italic}
+#addr-input:focus{outline:none;border-color:var(--gold);background:var(--white)}
+.addr-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gold-dk);font-size:16px;pointer-events:none}
+#addr-btn{padding:12px 26px;background:var(--navy);border:none;border-radius:6px;font-family:'Jost',sans-serif;font-size:10px;font-weight:600;color:var(--white);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .2s}
+#addr-btn:hover{background:var(--slate)}
+.filter-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.filter-lbl{font-size:10px;color:var(--text-soft);letter-spacing:.12em;text-transform:uppercase;min-width:38px}
+.pill{padding:5px 14px;border:1.5px solid var(--mid);border-radius:20px;font-family:'Jost',sans-serif;font-size:11px;font-weight:400;color:var(--grey);background:var(--white);cursor:pointer;transition:all .2s}
+.pill.active{border-color:var(--gold);background:var(--gold-lt);color:var(--navy);font-weight:600}
+.cond-row{display:flex;gap:8px;margin-top:7px;flex-wrap:wrap;align-items:center}
+.pill-sm{padding:4px 12px;border:1.5px solid var(--mid);border-radius:16px;font-family:'Jost',sans-serif;font-size:10px;color:var(--grey);background:var(--white);cursor:pointer;transition:all .2s}
+.pill-sm.active{border-color:var(--slate);background:#EAF2FB;color:var(--slate);font-weight:600}
+/* AUTOCOMPLETE */
+#ac-list{position:absolute;top:calc(100% + 5px);left:0;right:0;background:var(--white);border:1.5px solid var(--gold);border-radius:8px;z-index:2000;max-height:260px;overflow-y:auto;box-shadow:0 12px 40px rgba(27,42,74,.18);display:none}
+.ac-item{padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--mid);transition:background .15s}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover{background:var(--gold-lt)}
+.ac-label{font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--navy);font-weight:500}
+.ac-sub{font-size:11px;color:var(--text-soft);margin-top:1px}
+.ac-price{float:right;font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--gold-dk);font-weight:500;margin-top:2px}
+.ac-loading{padding:12px 16px;font-style:italic;font-family:'Cormorant Garamond',serif;color:var(--text-soft);font-size:14px}
+/* RESULT CARD */
+#result-card{display:none;margin-top:14px;border:1.5px solid var(--gold);border-radius:10px;background:var(--white);overflow:hidden}
+.rc-hdr{background:var(--navy);padding:12px 18px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.rc-addr{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:400;color:var(--white)}
+.rc-badge{font-size:9px;font-weight:500;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-left:auto;background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:2px 8px}
+.rc-body{display:grid;grid-template-columns:1fr 1fr 1fr}
+.rc-col{text-align:center;padding:14px 8px;position:relative}
+.rc-col.mid{background:var(--navy)}
+.rc-col:not(:last-child)::after{content:'';position:absolute;right:0;top:20%;height:60%;width:1px;background:var(--mid)}
+.rc-val{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:500;color:var(--navy);line-height:1}
+.rc-col.mid .rc-val{color:var(--gold);font-size:30px}
+.rc-unit{font-size:11px;color:var(--text-soft);margin-top:2px}
+.rc-col.mid .rc-unit{color:rgba(255,255,255,.45)}
+.rc-lbl{font-size:9px;color:var(--text-soft);letter-spacing:.1em;text-transform:uppercase;margin-top:4px}
+.rc-col.mid .rc-lbl{color:rgba(255,255,255,.45)}
+.rc-trend{font-size:11px;font-weight:500;margin-top:4px}
+.rc-trend.up{color:#2E7D32}.rc-trend.down{color:#C62828}
+.rc-street-note{padding:7px 16px;background:var(--gold-lt);border-top:1px solid rgba(201,169,110,.3);font-size:11px;color:var(--navy);display:flex;align-items:center;gap:6px}
+.rc-footer{padding:9px 18px;border-top:1px solid var(--mid);display:flex;align-items:center;gap:10px}
+.rc-note{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;color:var(--text-soft);flex:1}
+.rc-cta{padding:7px 16px;background:var(--gold);border:none;border-radius:5px;font-family:'Jost',sans-serif;font-size:10px;font-weight:600;color:var(--navy);letter-spacing:.08em;cursor:pointer;transition:background .2s}
+.rc-cta:hover{background:var(--gold-dk);color:var(--white)}
+.data-loading{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;color:var(--text-soft);text-align:center;padding:5px 0;display:none;animation:breathe 2s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.5}50%{opacity:1}}
+/* MAP LOADING OVERLAY */
+#map-loading{position:absolute;inset:0;background:rgba(248,245,240,.9);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:800;pointer-events:none}
+.map-spinner{width:32px;height:32px;border:2.5px solid var(--mid);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.map-loading-text{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--text-soft)}
+/* MAIN LAYOUT */
+.main-wrap{display:grid;grid-template-columns:1fr 330px;height:580px}
+@media(max-width:880px){.main-wrap{grid-template-columns:1fr;height:auto}}
+#map{height:580px;position:relative}
+@media(max-width:880px){#map{height:420px}}
+/* LEAFLET OVERRIDES */
+.leaflet-control-zoom a{background:rgba(27,42,74,.92)!important;backdrop-filter:blur(6px);border-color:rgba(201,169,110,.3)!important;color:var(--gold)!important}
+.leaflet-control-zoom a:hover{background:var(--navy-lt)!important}
+.leaflet-control-attribution{background:rgba(248,245,240,.75)!important;font-size:10px!important}
+/* TOOLTIP */
+.tt-jni{background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important}
+.tt-jni::before{display:none!important}
+.tt-inner{background:var(--navy);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:10px 14px;box-shadow:0 8px 32px rgba(0,0,0,.3);min-width:180px}
+.tt-area-type{font-size:9px;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:3px}
+.tt-name{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:500;color:var(--white);margin-bottom:5px}
+.tt-price{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:400;color:var(--gold);line-height:1}
+.tt-unit{font-size:11px;color:rgba(255,255,255,.4)}
+.tt-change{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;margin-top:4px}
+.tt-change.up{color:#81C784}.tt-change.down{color:#EF9A9A}
+.tt-hint{font-size:9px;color:rgba(201,169,110,.35);margin-top:7px;letter-spacing:.06em}
+/* MAP LEGEND */
+#map-legend{position:absolute;bottom:20px;left:16px;z-index:500;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border:1px solid var(--mid);border-radius:6px;padding:11px 15px;box-shadow:0 2px 12px rgba(27,42,74,.12)}
+.legend-title{font-size:9px;color:var(--navy);letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.legend-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:11px;color:var(--grey)}
+.legend-row:last-child{margin-bottom:0}
+.legend-swatch{width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.1)}
+.legend-sep{height:1px;background:var(--mid);margin:6px 0}
+.legend-sub{font-size:9px;color:var(--text-soft);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+/* SIDE PANEL */
+#side-panel{background:var(--white);border-left:1px solid var(--mid);display:flex;flex-direction:column;overflow:hidden}
+.panel-hdr{background:var(--navy);padding:16px 20px;flex-shrink:0;border-bottom:1px solid rgba(201,169,110,.15)}
+.panel-hdr-eyebrow{font-size:9px;color:var(--gold);letter-spacing:.2em;text-transform:uppercase;margin-bottom:3px}
+.panel-hdr h3{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:400;color:var(--white)}
+.panel-idle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:28px 20px;text-align:center;background:var(--cream)}
+.panel-idle-icon{font-size:32px;opacity:.3}
+.panel-idle-text{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--text-soft);line-height:1.7;max-width:200px}
+#panel-detail{display:none;flex:1;overflow-y:auto}
+.pd-scroll{padding:18px 20px}
+.pd-area-badge{display:inline-block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:2px 8px;border-radius:10px;margin-bottom:6px;font-weight:500}
+.pd-area-badge.commune{background:rgba(44,95,138,.12);color:var(--slate)}
+.pd-area-badge.quartier{background:rgba(160,120,64,.12);color:var(--gold-dk)}
+.pd-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--navy)}
+.pd-arc{font-size:10px;color:var(--text-soft);letter-spacing:.12em;text-transform:uppercase;margin-top:2px;margin-bottom:4px}
+.pd-addr-note{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;color:var(--gold-dk);margin-bottom:14px}
+.pd-price-wrap{background:var(--navy);border-radius:8px;padding:16px;text-align:center;margin-bottom:10px;position:relative;overflow:hidden}
+.pd-price-wrap::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:2px;background:linear-gradient(to right,transparent,var(--gold),transparent)}
+.pd-price-label{font-size:9px;color:rgba(255,255,255,.4);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
+.pd-price-main{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:400;color:var(--gold);line-height:1}
+.pd-price-unit{font-size:12px;color:rgba(255,255,255,.4);margin-top:3px}
+.pd-trend{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:8px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px}
+.pd-trend.up{color:#81C784}.pd-trend.down{color:#EF9A9A}
+.pd-source{font-size:9px;color:rgba(255,255,255,.2);text-align:center;margin-top:6px;letter-spacing:.05em}
+.pd-street-precision{background:var(--gold-lt);border:1px solid rgba(201,169,110,.3);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--navy)}
+.pd-grid-label{font-size:9px;color:var(--text-soft);letter-spacing:.16em;text-transform:uppercase;margin-bottom:7px;margin-top:12px}
+.pd-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.pd-cell{background:var(--cream);border:1px solid var(--mid);border-radius:6px;padding:9px 10px}
+.pd-cell-val{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:500;color:var(--navy)}
+.pd-cell-lbl{font-size:9px;color:var(--text-soft);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+.pd-q-label{font-size:9px;color:var(--text-soft);letter-spacing:.16em;text-transform:uppercase;margin-bottom:7px}
+.pd-q-item{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--mid);font-size:13px}
+.pd-q-item:last-child{border-bottom:none}
+.pd-q-name{font-family:'Cormorant Garamond',serif;color:var(--grey);font-style:italic}
+.pd-q-price{font-weight:600;color:var(--navy);font-family:'Cormorant Garamond',serif}
+.pd-btn{width:100%;padding:11px;background:var(--navy);border:none;border-radius:6px;font-family:'Jost',sans-serif;font-size:10px;font-weight:600;color:var(--white);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-top:12px}
+.pd-btn:hover{background:var(--slate)}
+/* DATA NOTE */
+.data-note{background:var(--navy);border-top:2px solid var(--gold);text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;color:rgba(201,169,110,.35);padding:9px 24px;letter-spacing:.04em}
+/* MODAL */
+#overlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(27,42,74,.75);backdrop-filter:blur(6px);overflow-y:auto;padding:24px 16px}
+#modal{background:var(--white);border-radius:12px;max-width:660px;margin:0 auto;box-shadow:0 24px 80px rgba(27,42,74,.4);overflow:hidden}
+.modal-hdr{background:var(--navy);padding:22px 28px 16px;position:relative;border-bottom:1px solid rgba(201,169,110,.15)}
+.modal-hdr-eyebrow{font-size:9px;color:var(--gold);letter-spacing:.2em;text-transform:uppercase;margin-bottom:5px}
+.modal-hdr h2{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--white)}
+.modal-hdr h2 em{color:var(--gold);font-style:italic}
+.modal-hdr p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;color:rgba(255,255,255,.45);margin-top:4px}
+.modal-close{position:absolute;top:16px;right:18px;background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.modal-close:hover{border-color:var(--gold);color:var(--gold)}
+.modal-body{padding:24px 28px;max-height:76vh;overflow-y:auto}
+.fsec{margin-bottom:18px}
+.fsec-title{font-size:10px;font-weight:600;color:var(--navy);letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--mid);display:flex;align-items:center;gap:7px}
+.fsec-title::before{content:'';display:inline-block;width:3px;height:12px;background:var(--gold);border-radius:2px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fgrp{display:flex;flex-direction:column;gap:3px}
+.fgrp.full{grid-column:1/-1}
+.fgrp label{font-size:9px;font-weight:600;color:var(--navy);letter-spacing:.1em;text-transform:uppercase}
+.fgrp input,.fgrp select,.fgrp textarea{padding:9px 11px;background:var(--cream);border:1.5px solid var(--mid);border-radius:5px;font-family:'Jost',sans-serif;font-size:13px;color:var(--grey);transition:border-color .2s}
+.fgrp input:focus,.fgrp select:focus,.fgrp textarea:focus{outline:none;border-color:var(--gold);background:var(--white)}
+.fgrp textarea{resize:vertical;min-height:70px}
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:4px}
+.ci{display:flex;align-items:center;gap:7px;padding:6px 10px;border:1.5px solid var(--mid);border-radius:5px;cursor:pointer;font-size:13px;font-family:'Cormorant Garamond',serif;color:var(--grey);transition:all .15s}
+.ci:hover{border-color:var(--gold-dk);background:var(--gold-lt)}
+.ci input[type=checkbox]{display:none}
+.cb-dot{width:13px;height:13px;border:1.5px solid var(--mid);border-radius:3px;flex-shrink:0;position:relative;transition:all .15s}
+.ci input:checked~.cb-dot{background:var(--navy);border-color:var(--navy)}
+.ci input:checked~.cb-dot::after{content:'✓';position:absolute;top:-2px;left:1px;font-size:10px;color:var(--white);font-weight:700}
+.ci-intent{font-weight:500;color:var(--navy)}
+.rgpd-wrap{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--cream);border:1.5px solid var(--mid);border-radius:6px;cursor:pointer;transition:border-color .2s}
+.rgpd-wrap:hover{border-color:var(--gold)}
+.rgpd-toggle{width:18px;height:18px;border:1.5px solid var(--mid);border-radius:3px;flex-shrink:0;position:relative;transition:all .2s;margin-top:2px}
+.rgpd-toggle.on{background:var(--navy);border-color:var(--navy)}
+.rgpd-toggle.on::after{content:'✓';position:absolute;top:-2px;left:2px;font-size:11px;color:var(--white);font-weight:700}
+.rgpd-text{font-size:11px;color:rgba(46,46,46,.6);line-height:1.6}
+.rgpd-text a{color:var(--gold-dk);text-decoration:underline}
+.btn-sub{width:100%;padding:13px;background:var(--navy);border:none;border-radius:6px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;color:var(--white);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-top:8px}
+.btn-sub:hover{background:var(--slate)}
+.success-msg{text-align:center;padding:34px 20px;display:none}
+.success-msg h3{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:400;color:var(--navy);margin-bottom:8px}
+.success-msg p{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--text-soft);font-size:15px;line-height:1.6}
+.budget-display{text-align:center;font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--navy);margin-bottom:6px}
+input[type=range]{width:100%;accent-color:var(--gold);cursor:pointer}
+</style>
+</head>
+<body>
+<div id="copy-shield"><p>James Nisbet Immobilier<br>© Contenu protégé</p></div>
+<div id="lang-toggle">
+  <button id="lang-toggle-btn" onclick="toggleLanguage()">
+    <span class="lang-flag">🇫🇷</span><span class="lang-sep">·</span>FR
+    <span class="lang-sep" style="margin:0 4px">|</span>
+    <span class="lang-inactive">EN<span class="lang-sep">·</span>🇬🇧</span>
+  </button>
+</div>
+<header class="site-header">
+  <div class="site-logo">James Nisbet <em>Immobilier</em></div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-tag" data-i18n="header-tag">Bordeaux Métropole · Estimation par adresse</div>
+  <div class="hdr-right"><div class="hdr-updated" id="hdr-updated"></div></div>
+</header>
+<div class="hero">
+  <div class="hero-inner">
+    <p class="hero-eyebrow" data-i18n="hero-eyebrow">Bordeaux Métropole&nbsp;·&nbsp;Gironde&nbsp;·&nbsp;Nouvelle-Aquitaine</p>
+    <h1 data-i18n="hero-h1">Combien vaut votre bien<br>dans le <em>Grand Bordeaux</em>&nbsp;?</h1>
+    <p class="hero-sub" data-i18n="hero-sub">Saisissez votre adresse pour une estimation précise rue par rue, basée sur les données notariales actualisées.</p>
+  </div>
+</div>
+<div class="search-zone">
+  <div class="search-inner">
+    <span class="search-label" data-i18n="search-label">Votre adresse</span>
+    <div id="data-loading" class="data-loading" data-i18n="data-loading">Chargement des données…</div>
+    <div class="search-row">
+      <div class="addr-wrap">
+        <span class="addr-icon">📍</span>
+        <input type="text" id="addr-input" autocomplete="off"
+               placeholder="Ex : 12 rue des Chartrons, Bordeaux"
+               oninput="onAddrInput(this.value)"
+               onkeydown="onAddrKey(event)"
+               onblur="setTimeout(function(){document.getElementById('ac-list').style.display='none';},200)"
+               data-i18n-placeholder="addr-placeholder">
+        <div id="ac-list" onmousedown="event.preventDefault()"></div>
+      </div>
+      <button id="addr-btn" onclick="doSearch()" data-i18n="search-btn">Estimer</button>
+    </div>
+    <div class="filter-row">
+      <span class="filter-lbl" data-i18n="type-label">Type</span>
+      <button class="pill active" onclick="selectType(this,'appt')" data-i18n="type-appt">Appartement</button>
+      <button class="pill" onclick="selectType(this,'maison')" data-i18n="type-maison">Maison</button>
+      <button class="pill" onclick="selectType(this,'villa')" data-i18n="type-villa">Villa · Prestige</button>
+    </div>
+    <div class="cond-row">
+      <span class="filter-lbl" data-i18n="cond-label">État</span>
+      <button class="pill-sm active" onclick="selectCond(this,'anc')" data-i18n="cond-ancien">Ancien</button>
+      <button class="pill-sm" onclick="selectCond(this,'renov')" data-i18n="cond-renove">Rénové</button>
+      <button class="pill-sm" onclick="selectCond(this,'neuf')" data-i18n="cond-neuf">Neuf · VEFA</button>
+    </div>
+    <div id="result-card">
+      <div class="rc-hdr">
+        <div class="rc-addr" id="rc-addr">—</div>
+        <div class="rc-badge" id="rc-badge">Appartement · Ancien</div>
+      </div>
+      <div class="rc-body">
+        <div class="rc-col"><div class="rc-val" id="rc-low">—</div><div class="rc-unit">€/m²</div><div class="rc-lbl" data-i18n="rc-low">Fourchette basse</div></div>
+        <div class="rc-col mid"><div class="rc-val" id="rc-med">—</div><div class="rc-unit">€/m²</div><div class="rc-lbl" data-i18n="rc-med">Prix médian</div><div class="rc-trend" id="rc-trend"></div></div>
+        <div class="rc-col"><div class="rc-val" id="rc-high">—</div><div class="rc-unit">€/m²</div><div class="rc-lbl" data-i18n="rc-high">Fourchette haute</div></div>
+      </div>
+      <div class="rc-street-note" id="rc-street-note" style="display:none">📍 <span id="rc-street-detail"></span></div>
+      <div class="rc-footer">
+        <span class="rc-note" id="rc-note-text">DVF · Sources notariales</span>
+        <button class="rc-cta" onclick="openModal(null)" data-i18n="rc-cta">Affiner avec JNI</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="main-wrap">
+  <div id="map">
+    <div id="map-loading">
+      <div class="map-spinner"></div>
+      <div class="map-loading-text" data-i18n="map-loading">Chargement des délimitations officielles…</div>
+    </div>
+    <div id="map-legend">
+      <div class="legend-title" data-i18n="legend-title">Prix médian au m²</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(201,169,110,.35)"></div><span>&lt; 2 500 €</span></div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(82,160,106,.35)"></div><span>2 500 — 3 500 €</span></div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(46,136,112,.35)"></div><span>3 500 — 4 500 €</span></div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(192,104,24,.35)"></div><span>4 500 — 5 500 €</span></div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(160,40,40,.35)"></div><span>&gt; 5 500 €</span></div>
+      <div class="legend-sep"></div>
+      <div class="legend-sub" data-i18n="legend-sub">Quartiers de Bordeaux</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:rgba(44,95,138,.08);border:1.5px dashed rgba(44,95,138,.5)"></div><span data-i18n="legend-quartier">Délimitation de quartier</span></div>
+    </div>
+  </div>
+  <div id="side-panel">
+    <div class="panel-hdr">
+      <div class="panel-hdr-eyebrow" data-i18n="panel-eyebrow">Analyse de marché</div>
+      <h3 data-i18n="panel-h3">Sélectionnez un secteur</h3>
+    </div>
+    <div class="panel-idle" id="panel-idle">
+      <div class="panel-idle-icon">✦</div>
+      <div class="panel-idle-text" data-i18n="panel-idle">Saisissez une adresse ou cliquez sur une commune ou un quartier pour accéder aux prix détaillés.</div>
+    </div>
+    <div id="panel-detail">
+      <div class="pd-scroll">
+        <span class="pd-area-badge commune" id="pd-badge">Commune</span>
+        <div class="pd-name" id="pd-name">—</div>
+        <div class="pd-arc" id="pd-arc">Gironde · Métropole</div>
+        <div class="pd-addr-note" id="pd-addr-note" style="display:none"></div>
+        <div class="pd-price-wrap">
+          <div class="pd-price-label" id="pd-price-label">Prix médian</div>
+          <div class="pd-price-main" id="pd-price">—</div>
+          <div class="pd-price-unit">€ / m²</div>
+          <div id="pd-trend" class="pd-trend up">↑ +2.1%</div>
+          <div class="pd-source" id="pd-source">DVF · 2025-Q4</div>
+        </div>
+        <div id="pd-street-precision" class="pd-street-precision" style="display:none"></div>
+        <div class="pd-grid-label" data-i18n="pd-grid-label">Par type de bien</div>
+        <div class="pd-grid">
+          <div class="pd-cell"><div class="pd-cell-val" id="pd-appt">—</div><div class="pd-cell-lbl" data-i18n="pd-appt">Appartement</div></div>
+          <div class="pd-cell"><div class="pd-cell-val" id="pd-maison">—</div><div class="pd-cell-lbl" data-i18n="pd-maison">Maison</div></div>
+          <div class="pd-cell"><div class="pd-cell-val" id="pd-neuf">—</div><div class="pd-cell-lbl" data-i18n="pd-neuf">Neuf</div></div>
+          <div class="pd-cell"><div class="pd-cell-val" id="pd-villa">—</div><div class="pd-cell-lbl" data-i18n="pd-villa">Prestige</div></div>
+        </div>
+        <div id="pd-quartiers"></div>
+        <button class="pd-btn" onclick="openModal(currentCommune)" data-i18n="pd-btn">Être contacté pour ce secteur</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="data-note" data-i18n="data-note">Prix indicatifs · DVF · notaires de France · Actualisation automatique · Précision rue par rue</div>
+<!-- MODAL -->
+<div id="overlay" onclick="if(event.target===this)closeModal()">
+  <div id="modal">
+    <div class="modal-hdr">
+      <div class="modal-hdr-eyebrow" data-i18n="modal-eyebrow">James Nisbet Immobilier · Service confidentiel</div>
+      <h2><span data-i18n="modal-h2">Demande de contact</span><em id="modal-commune"> — Grand Bordeaux</em></h2>
+      <p data-i18n="modal-sub">Réponse sous 24h ouvrées · Sans engagement · Discrétion absolue</p>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="success-msg" id="success-msg">
+        <div style="font-size:32px;margin-bottom:12px">✅</div>
+        <h3 data-i18n="success-h3">Demande transmise</h3>
+        <p data-i18n="success-p" style="margin-top:8px">James Nisbet vous contactera sous 24h ouvrées en toute confidentialité.</p>
+        <button onclick="closeModal()" style="margin-top:18px;padding:9px 26px;background:var(--navy);color:#fff;border:none;border-radius:5px;font-family:'Jost';font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer" data-i18n="success-close">Fermer</button>
+      </div>
+      <form id="srch-form" onsubmit="handleSubmit(event);return false;">
+        <div class="fsec">
+          <div class="fsec-title" data-i18n="intent-title">Je souhaite</div>
+          <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;color:var(--text-soft);margin-bottom:8px" data-i18n="intent-note">Plusieurs choix possibles</p>
+          <div class="check-grid" id="intent-grid">
+            <label class="ci ci-intent"><input type="checkbox" name="intention" value="vendre-logement"><span class="cb-dot"></span><span data-i18n="intent-sell-home">Vendre mon logement</span></label>
+            <label class="ci ci-intent"><input type="checkbox" name="intention" value="acheter-logement"><span class="cb-dot"></span><span data-i18n="intent-buy-home">Acheter un logement</span></label>
+            <label class="ci ci-intent"><input type="checkbox" name="intention" value="louer"><span class="cb-dot"></span><span data-i18n="intent-rent">Louer un bien</span></label>
+            <label class="ci ci-intent"><input type="checkbox" name="intention" value="acheter-bail"><span class="cb-dot"></span><span data-i18n="intent-buy-bail">Acheter un bail commercial</span></label>
+            <label class="ci ci-intent"><input type="checkbox" name="intention" value="acheter-fdc"><span class="cb-dot"></span><span data-i18n="intent-buy-fdc">Acheter un fonds de commerce</span></label>
+            <label class="ci ci-intent"><input type="checkbox" name="intention" value="vendre-bail"><span class="cb-dot"></span><span data-i18n="intent-sell-bail">Vendre un bail commercial</span></label>
+            <label class="ci ci-intent"><input type="checkbox" name="intention" value="vendre-fdc"><span class="cb-dot"></span><span data-i18n="intent-sell-fdc">Vendre un fonds de commerce</span></label>
+          </div>
+          <div id="intent-error" data-i18n="intent-error" style="display:none;margin-top:7px;font-size:11px;color:#C62828">⚠ Veuillez sélectionner au moins une option.</div>
+        </div>
+        <div class="fsec">
+          <div class="fsec-title" data-i18n="coords-title">Coordonnées</div>
+          <div class="fgrid">
+            <div class="fgrp"><label data-i18n="label-titre">Titre</label><select name="title"><option value="">—</option><option>M.</option><option>Mme</option></select></div>
+            <div class="fgrp"><label data-i18n="label-prenom">Prénom *</label><input type="text" name="firstname" required></div>
+            <div class="fgrp"><label data-i18n="label-nom">Nom *</label><input type="text" name="lastname" required></div>
+            <div class="fgrp"><label data-i18n="label-email">Email *</label><input type="email" name="email" required></div>
+            <div class="fgrp full"><label data-i18n="label-tel">Téléphone *</label><input type="tel" name="phone" required></div>
+          </div>
+        </div>
+        <div class="fsec">
+          <div class="fsec-title" data-i18n="loc-title">Secteur souhaité</div>
+          <div class="fgrid">
+            <div class="fgrp"><label data-i18n="label-commune">Commune</label><select name="commune" id="f-commune"><option value="">—</option></select></div>
+            <div class="fgrp"><label data-i18n="label-rayon">Rayon</label><select name="radius"><option>5 km</option><option>10 km</option><option selected>20 km</option><option>Toute la Métropole</option></select></div>
+          </div>
+        </div>
+        <div class="fsec">
+          <div class="fsec-title" data-i18n="type-title">Type de bien</div>
+          <div class="check-grid">
+            <label class="ci"><input type="checkbox" name="type" value="chateau"><span class="cb-dot"></span><span data-i18n="type-chateau">Château</span></label>
+            <label class="ci"><input type="checkbox" name="type" value="manoir"><span class="cb-dot"></span><span data-i18n="type-manoir">Manoir · Bastide</span></label>
+            <label class="ci"><input type="checkbox" name="type" value="maison"><span class="cb-dot"></span><span data-i18n="type-maison">Maison · Villa</span></label>
+            <label class="ci"><input type="checkbox" name="type" value="appt"><span class="cb-dot"></span><span data-i18n="type-appt">Appartement</span></label>
+            <label class="ci"><input type="checkbox" name="type" value="loft"><span class="cb-dot"></span><span data-i18n="type-loft">Loft · Duplex</span></label>
+            <label class="ci"><input type="checkbox" name="type" value="prop"><span class="cb-dot"></span><span data-i18n="type-prop">Propriété d'exception</span></label>
+          </div>
+        </div>
+        <div class="fsec">
+          <div class="fsec-title" data-i18n="budget-title">Budget maximum</div>
+          <div class="budget-display" id="bdg-display">500 000 €</div>
+          <input type="range" name="budget" id="bdg-rng" min="100000" max="5000000" step="50000" value="500000" oninput="updBudget(this.value)">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-soft);margin-top:2px"><span>100 k€</span><span>5 M€</span></div>
+        </div>
+        <div class="fsec">
+          <div class="fsec-title" data-i18n="svc-title">Services</div>
+          <div class="check-grid">
+            <label class="ci"><input type="checkbox" name="svc" value="notaire"><span class="cb-dot"></span><span data-i18n="svc-notaire">Notaire</span></label>
+            <label class="ci"><input type="checkbox" name="svc" value="archi"><span class="cb-dot"></span><span data-i18n="svc-archi">Architecte</span></label>
+            <label class="ci"><input type="checkbox" name="svc" value="finance"><span class="cb-dot"></span><span data-i18n="svc-finance">Courtier financement</span></label>
+            <label class="ci"><input type="checkbox" name="svc" value="diag"><span class="cb-dot"></span><span data-i18n="svc-diag">Diagnostics</span></label>
+            <label class="ci"><input type="checkbox" name="svc" value="demenage"><span class="cb-dot"></span><span data-i18n="svc-demenage">Déménagement</span></label>
+            <label class="ci"><input type="checkbox" name="svc" value="fiscal"><span class="cb-dot"></span><span data-i18n="svc-fiscal">Conseil fiscal</span></label>
+          </div>
+        </div>
+        <div class="fsec">
+          <div class="fsec-title" data-i18n="msg-title">Votre projet</div>
+          <div class="fgrp"><label data-i18n="label-message">Description</label><textarea name="message" rows="3" data-i18n-placeholder="msg-placeholder" placeholder="Résidence principale, quartier Chartrons…"></textarea></div>
+        </div>
+        <div class="fsec">
+          <div class="rgpd-wrap" id="rgpd-box" onclick="toggleRgpd()">
+            <div class="rgpd-toggle" id="rgpd-tog"></div>
+            <span class="rgpd-text" data-i18n="rgpd-text">J'accepte que mes données soient traitées par EI Alexander Nisbet (James Nisbet Immobilier) afin de traiter ma demande, conformément à la <a href="https://www.jnisbetimmo.com/mentions-legales" target="_blank" rel="noopener" onclick="event.stopPropagation();return true;">politique de confidentialité RGPD</a>.</span>
+          </div>
+          <div id="rgpd-error" data-i18n="rgpd-error" style="display:none;margin-top:5px;font-size:11px;color:#C62828">⚠ Veuillez accepter la politique RGPD.</div>
+        </div>
+        <button type="submit" class="btn-sub" data-i18n="submit-btn">Envoyer ma demande</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════════
+var CONFIG={
+  WEBHOOK_URL:'REPLACE_WITH_YOUR_APPS_SCRIPT_URL',
+  ALLOWED_DOMAINS:['jnisbetimmo.github.io','jnisbetimmo.com','www.jnisbetimmo.com',
+    'nasglobalproperties.com','www.nasglobalproperties.com','localhost','127.0.0.1',''],
+  PRICE_CACHE_TTL:6*60*60*1000,
+  SESSION_FLUSH_DELAY:30000,
+  GEOCODE_API:'https://api-adresse.data.gouv.fr/search/'
+};
+
+// ── PROTECTION ────────────────────────────────────────────────────
+(function(){
+  if(CONFIG.ALLOWED_DOMAINS.indexOf(window.location.hostname)===-1){
+    document.body.innerHTML='<div style="height:100vh;display:flex;align-items:center;justify-content:center;font-family:serif;color:#1B2A4A;font-size:18px;text-align:center;padding:40px">Accès non autorisé</div>';
+    throw new Error('Unauthorized domain');
+  }
+})();
+document.addEventListener('contextmenu',function(e){e.preventDefault();});
+document.addEventListener('keydown',function(e){
+  if(e.key==='F12'||(e.ctrlKey&&e.key==='u')||(e.ctrlKey&&e.key==='s')||(e.ctrlKey&&e.shiftKey&&'ijcIJC'.includes(e.key))){e.preventDefault();return false;}
+});
+setInterval(function(){var s=document.getElementById('copy-shield');if(s)s.style.display=(window.outerWidth-window.innerWidth>160||window.outerHeight-window.innerHeight>160)?'flex':'none';},1000);
+
+// ── SESSION ───────────────────────────────────────────────────────
+var SESSION={id:'jni_'+Date.now()+'_'+Math.random().toString(36).substr(2,6),startTime:Date.now(),lang:'fr',communesViewed:[],lastCommune:null,lastPrice:null,lastAddress:null,addressesSearched:[],modalOpened:false,formSubmitted:false,propertyType:'appt',condition:'anc',flushTimer:null};
+function trackEvent(name,data){
+  if(data){if(data.commune&&SESSION.communesViewed.indexOf(data.commune)===-1)SESSION.communesViewed.push(data.commune);if(data.commune)SESSION.lastCommune=data.commune;if(data.price)SESSION.lastPrice=data.price;if(data.address){SESSION.addressesSearched.push(data.address);SESSION.lastAddress=data.address;}if(name==='modal_open')SESSION.modalOpened=true;if(name==='form_submit')SESSION.formSubmitted=true;if(data.type)SESSION.propertyType=data.type;if(data.cond)SESSION.condition=data.cond;}
+  if(SESSION.flushTimer)clearTimeout(SESSION.flushTimer);
+  SESSION.flushTimer=setTimeout(flushSession,CONFIG.SESSION_FLUSH_DELAY);
+}
+function flushSession(){
+  if(SESSION.communesViewed.length===0&&SESSION.addressesSearched.length===0)return;
+  if(CONFIG.WEBHOOK_URL==='REPLACE_WITH_YOUR_APPS_SCRIPT_URL')return;
+  var p={type:'session',sessionId:SESSION.id,lang:SESSION.lang,commune:SESSION.lastCommune||'',propertyType:SESSION.propertyType,condition:SESSION.condition,estimatedPrice:SESSION.lastPrice||'',addressSearched:SESSION.addressesSearched.join(' | '),lastAddress:SESSION.lastAddress||'',sessionDuration:Math.round((Date.now()-SESSION.startTime)/1000),communesViewed:SESSION.communesViewed.length,modalOpened:SESSION.modalOpened,formSubmitted:SESSION.formSubmitted,userAgent:navigator.userAgent};
+  try{if(navigator.sendBeacon)navigator.sendBeacon(CONFIG.WEBHOOK_URL,JSON.stringify(p));else fetch(CONFIG.WEBHOOK_URL,{method:'POST',body:JSON.stringify(p),headers:{'Content-Type':'application/json'},keepalive:true}).catch(function(){});}catch(e){}
+}
+window.addEventListener('beforeunload',flushSession);window.addEventListener('pagehide',flushSession);
+
+// ── STATE ─────────────────────────────────────────────────────────
+var selectedType='appt',selectedCond='anc',currentCommune=null,rgpdChecked=false,currentLang='fr';
+var COMMUNES={},communeLayers={},quartierLayers={};
+var addrMarker=null,lastGeoResult=null,geocodeResults=[],geocodeTimer,geocodeCache={};
+
+// ── PRICE DATA ────────────────────────────────────────────────────
+var FB={
+  "bordeaux":{name:"Bordeaux",arc:"Métropole",tier:5,apptAnc:4600,apptRenov:5200,apptNeuf:5800,maisonAnc:5400,maisonRenov:6200,maisonNeuf:6800,villa:8500,change12m:1.8,sourceDate:"2025-Q4",quartiers:[{n:"Chartrons · Bacalan",p:5100},{n:"Saint-Pierre · Victor Hugo",p:5600},{n:"Caudéran",p:4800},{n:"Bordeaux-Lac",p:4200},{n:"Bordeaux-Sud",p:4100}]},
+  "merignac":{name:"Mérignac",arc:"Métropole",tier:3,apptAnc:3100,apptRenov:3600,apptNeuf:4000,maisonAnc:3400,maisonRenov:3900,maisonNeuf:4400,villa:5500,change12m:2.1,sourceDate:"2025-Q4",quartiers:[{n:"Centre-ville",p:3400},{n:"Arlac · Capeyron",p:3200},{n:"Mérignac-Soleil",p:2900}]},
+  "pessac":{name:"Pessac",arc:"Métropole",tier:3,apptAnc:3200,apptRenov:3700,apptNeuf:4200,maisonAnc:3600,maisonRenov:4100,maisonNeuf:4600,villa:5800,change12m:2.4,sourceDate:"2025-Q4",quartiers:[{n:"Pessac centre",p:3500},{n:"Alouette · Eyran",p:4200},{n:"Camponac",p:3800}]},
+  "talence":{name:"Talence",arc:"Métropole",tier:3,apptAnc:3400,apptRenov:3900,apptNeuf:4400,maisonAnc:3800,maisonRenov:4300,maisonNeuf:4900,villa:6000,change12m:2.8,sourceDate:"2025-Q4",quartiers:[{n:"Talence centre",p:3600},{n:"Médoquine",p:4100}]},
+  "gradignan":{name:"Gradignan",arc:"Métropole",tier:3,apptAnc:3200,apptRenov:3700,apptNeuf:4100,maisonAnc:3800,maisonRenov:4400,maisonNeuf:5000,villa:6200,change12m:2.2,sourceDate:"2025-Q4",quartiers:[{n:"Centre bourg",p:3500},{n:"Le Burck",p:4200}]},
+  "begles":{name:"Bègles",arc:"Métropole",tier:3,apptAnc:3500,apptRenov:4000,apptNeuf:4500,maisonAnc:3900,maisonRenov:4400,maisonNeuf:5000,villa:6000,change12m:3.2,sourceDate:"2025-Q4",quartiers:[{n:"Terres Neuves",p:4500},{n:"Centre Bègles",p:3600}]},
+  "villenave":{name:"Villenave-d'Ornon",arc:"Métropole",tier:3,apptAnc:3000,apptRenov:3500,apptNeuf:4000,maisonAnc:3400,maisonRenov:4000,maisonNeuf:4500,villa:5600,change12m:1.9,sourceDate:"2025-Q4",quartiers:[{n:"Centre",p:3200},{n:"Chambéry",p:3600}]},
+  "lormont":{name:"Lormont",arc:"Rive droite",tier:2,apptAnc:2600,apptRenov:3100,apptNeuf:3600,maisonAnc:3000,maisonRenov:3500,maisonNeuf:4000,villa:5000,change12m:2.5,sourceDate:"2025-Q4",quartiers:[{n:"Carriet",p:2400},{n:"Génicart",p:3100}]},
+  "cenon":{name:"Cenon",arc:"Rive droite",tier:2,apptAnc:2700,apptRenov:3200,apptNeuf:3700,maisonAnc:3100,maisonRenov:3600,maisonNeuf:4100,villa:5200,change12m:2.8,sourceDate:"2025-Q4",quartiers:[{n:"Cénon-centre",p:2800}]},
+  "floirac":{name:"Floirac",arc:"Rive droite",tier:3,apptAnc:3000,apptRenov:3500,apptNeuf:4000,maisonAnc:3400,maisonRenov:3900,maisonNeuf:4400,villa:5600,change12m:3.5,sourceDate:"2025-Q4",quartiers:[{n:"Floirac-Brazza",p:3800}]},
+  "artigues":{name:"Artigues-près-Bordeaux",arc:"Rive droite",tier:2,apptAnc:2800,apptRenov:3300,apptNeuf:3800,maisonAnc:3200,maisonRenov:3700,maisonNeuf:4200,villa:5200,change12m:1.8,sourceDate:"2025-Q4",quartiers:[{n:"Centre",p:3000}]},
+  "blanquefort":{name:"Blanquefort",arc:"Nord Métropole",tier:2,apptAnc:2600,apptRenov:3000,apptNeuf:3500,maisonAnc:3000,maisonRenov:3500,maisonNeuf:4000,villa:5000,change12m:1.5,sourceDate:"2025-Q4",quartiers:[{n:"Centre bourg",p:2700}]},
+  "bruges":{name:"Bruges",arc:"Nord Métropole",tier:3,apptAnc:3200,apptRenov:3700,apptNeuf:4200,maisonAnc:3600,maisonRenov:4100,maisonNeuf:4600,villa:5800,change12m:2.1,sourceDate:"2025-Q4",quartiers:[{n:"Bruges-centre",p:3500}]},
+  "le-bouscat":{name:"Le Bouscat",arc:"Métropole",tier:4,apptAnc:4000,apptRenov:4600,apptNeuf:5200,maisonAnc:4500,maisonRenov:5100,maisonNeuf:5800,villa:7200,change12m:2.0,sourceDate:"2025-Q4",quartiers:[{n:"Le Bouscat centre",p:4200}]},
+  "eysines":{name:"Eysines",arc:"Métropole",tier:2,apptAnc:2800,apptRenov:3300,apptNeuf:3800,maisonAnc:3200,maisonRenov:3700,maisonNeuf:4200,villa:5200,change12m:1.8,sourceDate:"2025-Q4",quartiers:[{n:"Centre bourg",p:3000}]},
+  "bassens":{name:"Bassens",arc:"Rive droite",tier:2,apptAnc:2200,apptRenov:2700,apptNeuf:3200,maisonAnc:2600,maisonRenov:3100,maisonNeuf:3600,villa:4500,change12m:1.2,sourceDate:"2025-Q4",quartiers:[{n:"Bassens-centre",p:2400}]},
+  "le-haillan":{name:"Le Haillan",arc:"Métropole",tier:2,apptAnc:2900,apptRenov:3400,apptNeuf:3900,maisonAnc:3300,maisonRenov:3800,maisonNeuf:4300,villa:5400,change12m:1.9,sourceDate:"2025-Q4",quartiers:[{n:"Centre",p:3100}]},
+  "cestas":{name:"Cestas",arc:"Métropole",tier:2,apptAnc:2900,apptRenov:3300,apptNeuf:3800,maisonAnc:3300,maisonRenov:3800,maisonNeuf:4300,villa:5500,change12m:2.0,sourceDate:"2025-Q4",quartiers:[{n:"Cestas-bourg",p:3000}]},
+  "canejan":{name:"Canéjan",arc:"Sud Métropole",tier:3,apptAnc:3000,apptRenov:3500,apptNeuf:4000,maisonAnc:3500,maisonRenov:4000,maisonNeuf:4600,villa:5800,change12m:2.0,sourceDate:"2025-Q4",quartiers:[{n:"Centre",p:3200}]},
+  "leognan":{name:"Léognan",arc:"Arc sud",tier:2,apptAnc:2800,apptRenov:3300,apptNeuf:3800,maisonAnc:3400,maisonRenov:4000,maisonNeuf:4600,villa:6800,change12m:2.5,sourceDate:"2025-Q4",quartiers:[{n:"Centre bourg",p:3200},{n:"Domaines viticoles",p:5500}]},
+  "cadaujac":{name:"Cadaujac",arc:"Arc sud",tier:2,apptAnc:2600,apptRenov:3000,apptNeuf:3500,maisonAnc:3200,maisonRenov:3700,maisonNeuf:4200,villa:5500,change12m:2.0,sourceDate:"2025-Q4",quartiers:[{n:"Centre",p:2800}]},
+  "cadaullac":{name:"Cadaullac",arc:"Arc sud",tier:1,apptAnc:2000,apptRenov:2400,apptNeuf:2900,maisonAnc:2500,maisonRenov:3000,maisonNeuf:3500,villa:4800,change12m:1.5,sourceDate:"2025-Q4",quartiers:[{n:"Bourg",p:2200}]},
+  "podensac":{name:"Podensac",arc:"Arc sud · Sauternes",tier:1,apptAnc:1900,apptRenov:2300,apptNeuf:2700,maisonAnc:2200,maisonRenov:2700,maisonNeuf:3200,villa:4500,change12m:1.8,sourceDate:"2025-Q4",quartiers:[{n:"Podensac · Cérons",p:2000}]},
+  "libourne":{name:"Libourne",arc:"Arc est",tier:2,apptAnc:2400,apptRenov:2900,apptNeuf:3400,maisonAnc:2700,maisonRenov:3200,maisonNeuf:3800,villa:5000,change12m:2.2,sourceDate:"2025-Q4",quartiers:[{n:"Centre historique",p:2600},{n:"Périphérie",p:2300}]},
+  "branne":{name:"Branne",arc:"Arc est",tier:1,apptAnc:1800,apptRenov:2200,apptNeuf:2600,maisonAnc:2100,maisonRenov:2600,maisonNeuf:3100,villa:4200,change12m:1.5,sourceDate:"2025-Q4",quartiers:[{n:"Bourg",p:2000}]},
+  "saint-emilion":{name:"Saint-Émilion",arc:"Arc est · UNESCO",tier:5,apptAnc:3500,apptRenov:4200,apptNeuf:5000,maisonAnc:4200,maisonRenov:5000,maisonNeuf:6000,villa:9500,change12m:3.8,sourceDate:"2025-Q4",quartiers:[{n:"Village classé UNESCO",p:5500},{n:"Vignobles Premier Grand Cru",p:12000}]},
+  "saint-andre-de-cubzac":{name:"Saint-André-de-Cubzac",arc:"Arc nord",tier:2,apptAnc:2200,apptRenov:2600,apptNeuf:3100,maisonAnc:2500,maisonRenov:3000,maisonNeuf:3600,villa:4800,change12m:2.0,sourceDate:"2025-Q4",quartiers:[{n:"Centre bourg",p:2400}]},
+  "ambes":{name:"Ambès",arc:"Arc nord",tier:1,apptAnc:1900,apptRenov:2300,apptNeuf:2700,maisonAnc:2200,maisonRenov:2700,maisonNeuf:3200,villa:4000,change12m:1.2,sourceDate:"2025-Q4",quartiers:[{n:"Bourg",p:2000}]},
+  "andernos-les-bains":{name:"Andernos-les-Bains",arc:"Bassin d'Arcachon",tier:4,apptAnc:4200,apptRenov:4900,apptNeuf:5500,maisonAnc:5000,maisonRenov:5800,maisonNeuf:6500,villa:9000,change12m:3.5,sourceDate:"2025-Q4",quartiers:[{n:"Bord de bassin",p:5500},{n:"Centre ville",p:4400}]},
+  "lacanau":{name:"Lacanau",arc:"Médoc · Côte Atlantique",tier:3,apptAnc:3200,apptRenov:3700,apptNeuf:4200,maisonAnc:3600,maisonRenov:4200,maisonNeuf:4800,villa:6500,change12m:4.2,sourceDate:"2025-Q4",quartiers:[{n:"Lacanau-Océan",p:4000},{n:"Lacanau-lac",p:3500}]}
+};
+
+// Bordeaux city quartiers with price data
+var QUARTIERS_BDX={
+  "chartrons":{name:"Chartrons · Bacalan",price:5100,change:2.4},
+  "saint-pierre":{name:"Saint-Pierre · Saint-Paul",price:5600,change:1.8},
+  "victor-hugo":{name:"Victor Hugo · Mériadeck",price:5200,change:1.5},
+  "saint-michel":{name:"Saint-Michel · Capucins",price:4900,change:2.8},
+  "saint-genès":{name:"Saint-Genès · Nansouty",price:5100,change:2.2},
+  "cauderan":{name:"Caudéran · Grand-Parc",price:4800,change:1.9},
+  "bordeaux-lac":{name:"Bordeaux-Lac · Chartrons Nord",price:4200,change:3.1},
+  "bastide":{name:"La Bastide · Benauge",price:4400,change:4.2},
+  "bordeaux-sud":{name:"Bordeaux-Sud · Belcier",price:4100,change:5.8},
+  "saint-augustin":{name:"Saint-Augustin · Mussonville",price:4600,change:2.0},
+  "pellegrin":{name:"Pellegrin · CHU",price:4300,change:2.5},
+  "bacalan":{name:"Bacalan · Darwin",price:4700,change:6.2},
+  "ginko":{name:"Ginko · Cité du Vin",price:4800,change:4.5}
+};
+
+// INSEE → JNI code mapping
+var INSEE_MAP={
+  "33063":"bordeaux","33281":"merignac","33318":"pessac","33522":"talence",
+  "33192":"gradignan","33056":"begles","33550":"villenave","33243":"lormont",
+  "33119":"cenon","33167":"floirac","33023":"artigues","33075":"blanquefort",
+  "33085":"bruges","33069":"le-bouscat","33163":"eysines","33032":"bassens",
+  "33200":"le-haillan","33123":"cestas","33105":"canejan","33241":"leognan",
+  "33087":"cadaujac","33091":"cadaullac","33330":"podensac","33249":"libourne",
+  "33065":"branne","33393":"saint-emilion","33370":"saint-andre-de-cubzac",
+  "33011":"ambes","33005":"andernos-les-bains","33227":"lacanau"
+};
+
+// OSM relation IDs — official administrative boundaries
+var OSM_REL={
+  "bordeaux":3227466,"merignac":74070,"pessac":74072,"talence":74076,
+  "gradignan":74069,"begles":74065,"villenave":74078,"lormont":74071,
+  "cenon":74067,"floirac":74068,"artigues":74064,"blanquefort":74066,
+  "bruges":74063,"le-bouscat":74062,"eysines":26765,"bassens":74061,
+  "le-haillan":74073,"cestas":74060,"canejan":74059,"leognan":74058,
+  "cadaujac":74057,"cadaullac":74056,"podensac":74055,"libourne":74054,
+  "branne":77793,"saint-emilion":77816,"saint-andre-de-cubzac":77828,
+  "ambes":74053,"andernos-les-bains":74052,"lacanau":74051
+};
+
+// Bordeaux quartier OSM relation IDs
+var OSM_QUARTIERS={
+  "chartrons":2608065,"saint-pierre":2608063,"victor-hugo":2608064,
+  "saint-michel":2608066,"saint-genès":2608067,"cauderan":2608068,
+  "bordeaux-lac":2608069,"bastide":2608070,"bordeaux-sud":2608071,
+  "saint-augustin":2608072,"pellegrin":2608073,"bacalan":2608074,"ginko":2608075
+};
+
+// ── PRICE TIER COLOURS — subtle fills on light road map ──────────
+// Positron base = light grey roads, fills need to be visible but not block roads
+var TIER_STYLE={
+  1:{fill:'rgba(201,169,110,.20)',border:'rgba(160,120,64,.7)',  hover:'rgba(201,169,110,.35)',sel:'rgba(201,169,110,.45)'},
+  2:{fill:'rgba(82,160,106,.18)', border:'rgba(52,130,76,.7)',   hover:'rgba(82,160,106,.35)', sel:'rgba(82,160,106,.45)'},
+  3:{fill:'rgba(46,136,112,.18)', border:'rgba(26,106,82,.7)',   hover:'rgba(46,136,112,.35)', sel:'rgba(46,136,112,.45)'},
+  4:{fill:'rgba(192,104,24,.18)', border:'rgba(162,74,4,.7)',    hover:'rgba(192,104,24,.35)', sel:'rgba(192,104,24,.45)'},
+  5:{fill:'rgba(160,40,40,.18)',  border:'rgba(120,20,20,.7)',   hover:'rgba(160,40,40,.32)',  sel:'rgba(160,40,40,.42)'}
+};
+var QUARTIER_STYLE={
+  fill:'rgba(44,95,138,.06)',border:'rgba(44,95,138,.55)',
+  hover:'rgba(44,95,138,.14)',sel:'rgba(44,95,138,.22)',
+  dashArray:'6,4'
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// MAP — Carto Positron (light road map)
+// ═══════════════════════════════════════════════════════════════════
+var map=L.map('map',{center:[44.837,-0.579],zoom:11,zoomControl:true,scrollWheelZoom:true});
+
+// Carto Positron — light grey roads, all labels visible, perfect for overlays
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a> &middot; &copy; James Nisbet Immobilier',
+  subdomains:'abcd',maxZoom:20
+}).addTo(map);
+
+// JNI copyright control
+var CW=L.Control.extend({onAdd:function(){var d=L.DomUtil.create('div');d.style.cssText='background:rgba(255,255,255,.8);color:rgba(27,42,74,.5);font-family:Cormorant Garamond,serif;font-style:italic;font-size:10px;padding:3px 8px;border-radius:3px;pointer-events:none';d.textContent='© James Nisbet Immobilier';return d;}});
+new CW({position:'bottomright'}).addTo(map);
+
+function C(code){return COMMUNES[code]||FB[code];}
+function getPrice(code){
+  var c=C(code);if(!c)return 0;
+  if(selectedType==='villa')return c.villa||0;
+  var sfx=selectedCond==='renov'?'Renov':selectedCond==='neuf'?'Neuf':'Anc';
+  return c[(selectedType==='maison'?'maison':'appt')+sfx]||c.apptAnc||0;
+}
+function styleFor(code,state){
+  var c=C(code);if(!c)return{fillOpacity:0};
+  var t=TIER_STYLE[c.tier||2];
+  if(state==='hover')return{fillColor:t.hover,fillOpacity:1,color:t.border,weight:2.5,opacity:1,dashArray:null};
+  if(state==='sel')return{fillColor:t.sel,fillOpacity:1,color:t.border,weight:3,opacity:1,dashArray:null};
+  return{fillColor:t.fill,fillOpacity:1,color:t.border,weight:1.5,opacity:0.9,dashArray:null};
+}
+function quartierStyleFor(state){
+  var q=QUARTIER_STYLE;
+  if(state==='hover')return{fillColor:q.hover,fillOpacity:1,color:q.border,weight:2,opacity:1,dashArray:q.dashArray};
+  if(state==='sel')return{fillColor:q.sel,fillOpacity:1,color:q.border,weight:2.5,opacity:1,dashArray:q.dashArray};
+  return{fillColor:q.fill,fillOpacity:1,color:q.border,weight:1.5,opacity:0.85,dashArray:q.dashArray};
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BOUNDARY LOADING — Overpass API (official OSM data)
+// ═══════════════════════════════════════════════════════════════════
+function stitchRing(ways){
+  var pts=[];
+  (ways[0].geometry||[]).forEach(function(p){pts.push([p.lon,p.lat]);});
+  var used=ways.map(function(_,i){return i===0;});
+  for(var iter=0;iter<ways.length*4;iter++){
+    var last=pts[pts.length-1],found=false;
+    for(var i=1;i<ways.length;i++){
+      if(used[i])continue;
+      var g=ways[i].geometry,f=g[0],l=g[g.length-1];
+      var d1=Math.abs(f.lon-last[0])+Math.abs(f.lat-last[1]);
+      var d2=Math.abs(l.lon-last[0])+Math.abs(l.lat-last[1]);
+      if(d1<0.0005||d2<0.0005){
+        used[i]=true;
+        (d1<=d2?g:g.slice().reverse()).slice(1).forEach(function(p){pts.push([p.lon,p.lat]);});
+        found=true;break;
+      }
+    }
+    if(!found)break;
+  }
+  var fp=pts[0],lp=pts[pts.length-1];
+  if(pts.length>2&&(Math.abs(fp[0]-lp[0])>0.00005||Math.abs(fp[1]-lp[1])>0.00005))pts.push([fp[0],fp[1]]);
+  return pts;
+}
+
+function overpassFeatures(elements,idToCode){
+  var features=[];
+  elements.forEach(function(el){
+    if(el.type!=='relation')return;
+    var code=idToCode[el.id];if(!code)return;
+    var outers=(el.members||[]).filter(function(m){return m.type==='way'&&m.role==='outer'&&m.geometry&&m.geometry.length>1;});
+    var inners=(el.members||[]).filter(function(m){return m.type==='way'&&m.role==='inner'&&m.geometry&&m.geometry.length>1;});
+    if(!outers.length)return;
+    var ring=stitchRing(outers);
+    if(ring.length<4)return;
+    var coords=[ring];
+    if(inners.length){
+      var innerRing=stitchRing(inners);
+      if(innerRing.length>3)coords.push(innerRing);
+    }
+    features.push({type:'Feature',properties:{code:code},geometry:{type:'Polygon',coordinates:coords}});
+  });
+  return features;
+}
+
+async function fetchOverpass(relIds,timeout){
+  timeout=timeout||25;
+  var q='[out:json][timeout:'+timeout+'];(rel(id:'+relIds.join(',')+'););out geom;';
+  var url='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q);
+  var res=await fetch(url,{mode:'cors'});
+  if(!res.ok)throw new Error('Overpass HTTP '+res.status);
+  return res.json();
+}
+
+async function loadCommuneBoundaries(){
+  var cacheKey='jni_communes_v9';
+  try{
+    var c=sessionStorage.getItem(cacheKey);
+    if(c){var p=JSON.parse(c);if(p&&p.length>=25){buildCommuneLayers(p);return;}}
+  }catch(e){}
+  try{
+    var relToCode={};
+    Object.keys(OSM_REL).forEach(function(k){relToCode[OSM_REL[k]]=k;});
+    var data=await fetchOverpass(Object.values(OSM_REL));
+    var features=overpassFeatures(data.elements,relToCode);
+    if(features.length<20)throw new Error('Only '+features.length+' commune features');
+    try{sessionStorage.setItem(cacheKey,JSON.stringify(features));}catch(e){}
+    buildCommuneLayers(features);
+    console.log('[JNI] Commune boundaries loaded: '+features.length);
+  }catch(err){
+    console.warn('[JNI] Commune Overpass failed: '+err.message);
+    // No hand-drawn fallback for communes — show error state
+    var loadEl=document.getElementById('map-loading');
+    if(loadEl){loadEl.querySelector('.map-loading-text').textContent='Erreur de chargement — rechargez la page';loadEl.querySelector('.map-spinner').style.display='none';}
+  }
+}
+
+async function loadQuartierBoundaries(){
+  var cacheKey='jni_quartiers_v9';
+  try{
+    var c=sessionStorage.getItem(cacheKey);
+    if(c){var p=JSON.parse(c);if(p&&p.length>=5){buildQuartierLayers(p);return;}}
+  }catch(e){}
+  try{
+    // Bordeaux quartiers via OSM suburb/quarter boundaries
+    var q='[out:json][timeout:20];(rel["boundary"="administrative"]["admin_level"="10"]["name"~"Bordeaux"](44.78,-0.65,44.92,-0.52);way["place"="quarter"]["name"~"."](44.78,-0.65,44.92,-0.52););out geom;';
+    var url='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q);
+    var res=await fetch(url);
+    var data=await res.json();
+    // Process ways as simple polygons
+    var features=[];
+    (data.elements||[]).forEach(function(el){
+      if(!el.geometry||el.geometry.length<4)return;
+      var name=(el.tags&&el.tags.name)||'';
+      if(!name)return;
+      var ring=el.geometry.map(function(p){return[p.lon,p.lat];});
+      if(ring.length>3){
+        features.push({type:'Feature',properties:{name:name},geometry:{type:'Polygon',coordinates:[ring]}});
+      }
+    });
+    if(features.length>3){
+      try{sessionStorage.setItem(cacheKey,JSON.stringify(features));}catch(e){}
+      buildQuartierLayers(features);
+      console.log('[JNI] Quartier boundaries loaded: '+features.length);
+    }
+  }catch(err){
+    console.log('[JNI] Quartier Overpass failed: '+err.message);
+  }
+}
+
+function buildCommuneLayers(features){
+  // Remove existing commune layers
+  Object.values(communeLayers).forEach(function(l){map.removeLayer(l);});
+  communeLayers={};
+
+  features.forEach(function(f){
+    var code=f.properties.code;
+    var c=C(code);if(!c)return;
+    var layer=L.geoJSON(f,{
+      style:function(){return styleFor(code);},
+      onEachFeature:function(feat,lyr){
+        lyr.on('mouseover',function(e){
+          if(code!==currentCommune)this.setStyle(styleFor(code,'hover'));
+          var price=getPrice(code),ch=(C(code)||{}).change12m||0;
+          var tt='<div class="tt-inner"><div class="tt-area-type">Commune</div><div class="tt-name">'+c.name+'</div><div class="tt-price">'+price.toLocaleString('fr-FR')+'<span class="tt-unit"> €/m²</span></div><div class="tt-change '+(ch>=0?'up':'down')+'">'+(ch>=0?'↑ +':'↓ ')+Math.abs(ch).toFixed(1)+'% '+(currentLang==='fr'?'/ 12 mois':'/ 12 months')+'</div><div class="tt-hint">'+(currentLang==='fr'?'Cliquer pour le détail →':'Click for details →')+'</div></div>';
+          this.bindTooltip(tt,{className:'tt-jni',sticky:true,offset:[14,0]}).openTooltip(e.latlng);
+        });
+        lyr.on('mouseout',function(){if(code!==currentCommune)this.setStyle(styleFor(code));this.closeTooltip();});
+        lyr.on('click',function(){
+          selectCommune(code,null,null);
+          trackEvent('commune_click',{commune:code,price:getPrice(code)});
+        });
+      }
+    }).addTo(map);
+    communeLayers[code]=layer;
+  });
+
+  // Hide loading overlay
+  var loadEl=document.getElementById('map-loading');
+  if(loadEl)loadEl.style.display='none';
+}
+
+function buildQuartierLayers(features){
+  Object.values(quartierLayers).forEach(function(l){map.removeLayer(l);});
+  quartierLayers={};
+  features.forEach(function(f){
+    var name=f.properties.name;
+    var layer=L.geoJSON(f,{
+      style:function(){return quartierStyleFor();},
+      onEachFeature:function(feat,lyr){
+        lyr.on('mouseover',function(e){
+          this.setStyle(quartierStyleFor('hover'));
+          var tt='<div class="tt-inner"><div class="tt-area-type">Quartier · Bordeaux</div><div class="tt-name">'+name+'</div><div class="tt-hint">'+(currentLang==='fr'?'Cliquer pour les prix':'Click for prices')+'</div></div>';
+          this.bindTooltip(tt,{className:'tt-jni',sticky:true,offset:[14,0]}).openTooltip(e.latlng);
+        });
+        lyr.on('mouseout',function(){this.setStyle(quartierStyleFor());this.closeTooltip();});
+        lyr.on('click',function(){
+          this.setStyle(quartierStyleFor('sel'));
+          showQuartierPanel(name);
+        });
+      }
+    }).addTo(map);
+    quartierLayers[name]=layer;
+  });
+}
+
+function refreshColors(){
+  Object.keys(communeLayers).forEach(function(code){
+    communeLayers[code].setStyle(code===currentCommune?styleFor(code,'sel'):styleFor(code));
+  });
+}
+
+// ── PANEL ─────────────────────────────────────────────────────────
+function selectCommune(code,addressLabel,streetAdj){
+  currentCommune=code;
+  var c=C(code);if(!c)return;
+  // Highlight this commune, reset others
+  Object.keys(communeLayers).forEach(function(k){
+    communeLayers[k].setStyle(k===code?styleFor(code,'sel'):styleFor(k));
+  });
+  // Reset quartier layers
+  Object.values(quartierLayers).forEach(function(l){l.setStyle(quartierStyleFor());});
+  showPanel(code,addressLabel,streetAdj,'commune');
+  updateResultCard(code,addressLabel,streetAdj);
+}
+
+function showPanel(code,addressLabel,streetAdj,areaType){
+  var c=C(code);if(!c)return;
+  document.getElementById('panel-idle').style.display='none';
+  document.getElementById('panel-detail').style.display='block';
+  var badge=document.getElementById('pd-badge');
+  badge.textContent=areaType==='commune'?(currentLang==='fr'?'Commune':'Municipality'):'Quartier';
+  badge.className='pd-area-badge '+(areaType==='commune'?'commune':'quartier');
+  document.getElementById('pd-name').textContent=c.name;
+  document.getElementById('pd-arc').textContent='Gironde · '+c.arc;
+  document.getElementById('pd-source').textContent='DVF · '+(c.sourceDate||'2025-Q4');
+  var addrEl=document.getElementById('pd-addr-note');
+  if(addressLabel){addrEl.textContent='📍 '+addressLabel;addrEl.style.display='block';}else addrEl.style.display='none';
+  var price=getPrice(code);
+  var adj=streetAdj?Math.round(price*streetAdj.factor):price;
+  document.getElementById('pd-price').textContent=adj.toLocaleString('fr-FR');
+  var tN={appt:{fr:'Appartement',en:'Apartment'},maison:{fr:'Maison',en:'House'},villa:{fr:'Prestige',en:'Prestige'}};
+  var cN={anc:{fr:'ancien',en:'period'},renov:{fr:'rénové',en:'renovated'},neuf:{fr:'neuf',en:'new'}};
+  document.getElementById('pd-price-label').textContent=(currentLang==='fr'?'Prix médian · ':'Median · ')+tN[selectedType][currentLang]+(selectedType==='villa'?'':' '+cN[selectedCond][currentLang]);
+  var ch=c.change12m||0,tEl=document.getElementById('pd-trend');
+  tEl.className='pd-trend '+(ch>=0?'up':'down');
+  tEl.textContent=(ch>=0?'↑ +':'↓ ')+Math.abs(ch).toFixed(1)+'% '+(currentLang==='fr'?'/ 12 mois':'/ 12 months');
+  document.getElementById('pd-appt').textContent=(c.apptAnc||0).toLocaleString('fr-FR')+' €';
+  document.getElementById('pd-maison').textContent=(c.maisonAnc||0).toLocaleString('fr-FR')+' €';
+  document.getElementById('pd-neuf').textContent=(c.apptNeuf||0).toLocaleString('fr-FR')+' €';
+  document.getElementById('pd-villa').textContent=(c.villa||0).toLocaleString('fr-FR')+' €';
+  var spEl=document.getElementById('pd-street-precision');
+  if(streetAdj){var pct=Math.round((streetAdj.factor-1)*100);spEl.innerHTML='<strong>Précision rue :</strong> ajustement '+(pct>=0?'+':'')+pct+'% pour cette adresse.';spEl.style.display='block';}else spEl.style.display='none';
+  var qs=c.quartiers||[],qWrap=document.getElementById('pd-quartiers');
+  if(qs.length){qWrap.innerHTML='<div class="pd-q-label">'+(currentLang==='fr'?'Secteurs · Prix au m²':'Areas · Price/m²')+'</div>'+qs.map(function(q){return'<div class="pd-q-item"><span class="pd-q-name">'+q.n+'</span><span class="pd-q-price">'+q.p.toLocaleString('fr-FR')+' €</span></div>';}).join('');}else qWrap.innerHTML='';
+  document.getElementById('f-commune').value=code;
+}
+
+function showQuartierPanel(name){
+  document.getElementById('panel-idle').style.display='none';
+  document.getElementById('panel-detail').style.display='block';
+  var badge=document.getElementById('pd-badge');
+  badge.textContent=currentLang==='fr'?'Quartier · Bordeaux':'District · Bordeaux';
+  badge.className='pd-area-badge quartier';
+  document.getElementById('pd-name').textContent=name;
+  document.getElementById('pd-arc').textContent='Bordeaux · Gironde';
+  // Match to a known quartier if possible
+  var qData=null;
+  Object.values(QUARTIERS_BDX).forEach(function(q){if(q.name===name||q.name.toLowerCase().includes(name.toLowerCase())||name.toLowerCase().includes(q.name.split(' ')[0].toLowerCase())){qData=q;}});
+  if(!qData){
+    // Fall back to bordeaux commune data
+    var bx=C('bordeaux');
+    document.getElementById('pd-price').textContent=(bx?bx.apptAnc:4600).toLocaleString('fr-FR');
+  } else {
+    document.getElementById('pd-price').textContent=qData.price.toLocaleString('fr-FR');
+    var ch=qData.change||0,tEl=document.getElementById('pd-trend');
+    tEl.className='pd-trend '+(ch>=0?'up':'down');
+    tEl.textContent=(ch>=0?'↑ +':'↓ ')+Math.abs(ch).toFixed(1)+'% '+(currentLang==='fr'?'/ 12 mois':'/ 12 months');
+  }
+  document.getElementById('pd-price-label').textContent=currentLang==='fr'?'Prix médian · Appartement ancien':'Median · Period apartment';
+  document.getElementById('pd-source').textContent='DVF · 2025-Q4';
+  document.getElementById('pd-addr-note').style.display='none';
+  document.getElementById('pd-street-precision').style.display='none';
+  document.getElementById('pd-quartiers').innerHTML='';
+  var bxData=C('bordeaux');
+  document.getElementById('pd-appt').textContent=(bxData?bxData.apptAnc:4600).toLocaleString('fr-FR')+' €';
+  document.getElementById('pd-maison').textContent=(bxData?bxData.maisonAnc:5400).toLocaleString('fr-FR')+' €';
+  document.getElementById('pd-neuf').textContent=(bxData?bxData.apptNeuf:5800).toLocaleString('fr-FR')+' €';
+  document.getElementById('pd-villa').textContent=(bxData?bxData.villa:8500).toLocaleString('fr-FR')+' €';
+  document.getElementById('f-commune').value='bordeaux';
+}
+
+// ── RESULT CARD ───────────────────────────────────────────────────
+function updateResultCard(code,addressLabel,streetAdj){
+  if(!code)return;var c=C(code);if(!c)return;
+  var base=getPrice(code);var adj=streetAdj?Math.round(base*streetAdj.factor):base;
+  document.getElementById('result-card').style.display='block';
+  document.getElementById('rc-addr').textContent=addressLabel||c.name;
+  var tN={appt:{fr:'Appartement',en:'Apartment'},maison:{fr:'Maison',en:'House'},villa:{fr:'Prestige',en:'Prestige'}};
+  var cN={anc:{fr:'ancien',en:'period'},renov:{fr:'rénové',en:'renovated'},neuf:{fr:'neuf',en:'new'}};
+  document.getElementById('rc-badge').textContent=tN[selectedType][currentLang]+(selectedType==='villa'?'':' · '+cN[selectedCond][currentLang]);
+  document.getElementById('rc-low').textContent=Math.round(adj*.88).toLocaleString('fr-FR');
+  document.getElementById('rc-med').textContent=adj.toLocaleString('fr-FR');
+  document.getElementById('rc-high').textContent=Math.round(adj*1.14).toLocaleString('fr-FR');
+  var t=document.getElementById('rc-trend');
+  t.className='rc-trend '+(c.change12m>=0?'up':'down');
+  t.textContent=(c.change12m>=0?'↑ +':'↓ ')+Math.abs(c.change12m).toFixed(1)+'%';
+  var sn=document.getElementById('rc-street-note'),sd=document.getElementById('rc-street-detail');
+  if(streetAdj){var pct=Math.round((streetAdj.factor-1)*100);sd.innerHTML='Ajustement <strong>'+(pct>=0?'+':'')+pct+'%</strong> · '+c.name;sn.style.display='flex';}else sn.style.display='none';
+  document.getElementById('rc-note-text').textContent='DVF · '+(c.sourceDate||'2025-Q4');
+}
+
+// ── STREET ADJUSTMENT TABLE ───────────────────────────────────────
+var STREET_ADJUST={
+  "quai des chartrons":1.22,"cours du medoc":1.10,"rue saint-remi":1.18,
+  "allees de tourny":1.25,"cours de l'intendance":1.22,"place gambetta":1.12,
+  "quai richelieu":1.24,"quai de la douane":1.22,"rue fondaudege":1.10,
+  "allee de chartres":1.18,"cours portal":1.14,"rue du palais gallien":1.20,
+  "boulevard wilson":1.18,"cours victor hugo":1.06,"rue sainte-catherine":1.08,
+  "cours georges clemenceau":1.15,"rue du loup":1.18,"rue des remparts":1.20,
+  "place saint-projet":1.16,"cours de la marne":0.92,"rue belleville":0.88,
+  "avenue thiers":0.90,"allees damour":0.82,"quai de paludate":0.95,
+  "boulevard de la plage":1.28,"avenue des aiguilles":1.18,
+  "quai du port ostreicole":1.22,"rue guadet":1.30,"place du clocher":1.35,
+  "route de bordeaux":1.15,"avenue du medoc":1.08,"avenue le notre":1.12,
+  "avenue du marechal joffre":1.10
+};
+function getStreetAdjustment(s){
+  if(!s)return null;
+  var n=s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  for(var k in STREET_ADJUST){
+    var nk=k.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if(n.includes(nk)||nk.includes(n.replace(/^\d+\s*/,''))){return{factor:STREET_ADJUST[k],street:k};}
+  }
+  return null;
+}
+
+// ── GEOCODING ─────────────────────────────────────────────────────
+function inseeToJni(i){return INSEE_MAP[String(i).substring(0,5)]||null;}
+
+async function geocodeQuery(query){
+  if(geocodeCache[query])return geocodeCache[query];
+  var url=CONFIG.GEOCODE_API+'?q='+encodeURIComponent(query)+'&limit=8&lat=44.837&lon=-0.579';
+  try{
+    var res=await fetch(url,{mode:'cors'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    var json=await res.json();
+    geocodeCache[query]=json.features||[];
+    return geocodeCache[query];
+  }catch(e){console.warn('[JNI] Geocode:',e.message);return[];}
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function onAddrInput(v){
+  clearTimeout(geocodeTimer);
+  var list=document.getElementById('ac-list');
+  if(!v||v.length<3){list.style.display='none';return;}
+  list.innerHTML='<div class="ac-loading">'+(currentLang==='fr'?'Recherche…':'Searching…')+'</div>';
+  list.style.display='block';
+  geocodeTimer=setTimeout(async function(){
+    if(window.location.protocol==='file:'){
+      list.innerHTML='<div class="ac-loading">'+(currentLang==='fr'?'Mode local — servez via http://localhost:8080 pour activer la recherche.':'Local mode — serve via http://localhost:8080 to enable search.')+'</div>';
+      return;
+    }
+    var results=await geocodeQuery(v+' Bordeaux Gironde');
+    if(!results.length){list.style.display='none';return;}
+    geocodeResults=results;
+    list.innerHTML=results.map(function(f,idx){
+      var p=f.properties;
+      var label=p.label||p.name||'';
+      var jniCode=inseeToJni(p.citycode||'');
+      var priceHtml='';
+      if(jniCode){
+        var c2=C(jniCode);
+        if(c2){
+          var basePrice=getPrice(jniCode);
+          var sa=getStreetAdjustment(p.street||p.name||'');
+          var dp=sa?Math.round(basePrice*sa.factor):basePrice;
+          priceHtml='<span class="ac-price">~'+dp.toLocaleString('fr-FR')+' €/m²</span>';
+        }
+      }
+      return '<div class="ac-item" data-idx="'+idx+'">'+priceHtml+
+        '<div class="ac-label">'+escHtml(label)+'</div>'+
+        '<div class="ac-sub">'+escHtml((p.postcode||'')+' '+(p.city||''))+'</div></div>';
+    }).join('');
+    var items=list.querySelectorAll('.ac-item');
+    items.forEach(function(el){
+      el.addEventListener('click',function(){
+        var idx=parseInt(this.getAttribute('data-idx'));
+        if(!isNaN(idx)&&geocodeResults[idx])selectGeoResult(geocodeResults[idx]);
+      });
+    });
+    list.style.display='block';
+  },280);
+}
+
+function selectGeoResult(f){
+  var p=f.properties;
+  var label=p.label||'';
+  var lng=f.geometry.coordinates[0],lat=f.geometry.coordinates[1];
+  var jniCode=inseeToJni(p.citycode||'');
+  var streetName=p.street||p.name||'';
+  document.getElementById('addr-input').value=label;
+  document.getElementById('ac-list').style.display='none';
+  lastGeoResult={label:label,commune:jniCode,street:streetName,lat:lat,lng:lng};
+  processGeoResult(jniCode,label,streetName,lat,lng);
+}
+
+function processGeoResult(jniCode,label,streetName,lat,lng){
+  if(addrMarker)map.removeLayer(addrMarker);
+  addrMarker=L.marker([lat,lng],{icon:L.divIcon({className:'',html:'<div style="width:12px;height:12px;background:#C9A96E;border:2.5px solid #1B2A4A;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>',iconSize:[12,12],iconAnchor:[6,6]}),zIndexOffset:1000}).addTo(map);
+  map.flyTo([lat,lng],15,{duration:0.9});
+  if(jniCode){
+    var sa=getStreetAdjustment(streetName);
+    selectCommune(jniCode,label,sa);
+    trackEvent('address_search',{address:label,commune:jniCode,price:sa?Math.round(getPrice(jniCode)*sa.factor):getPrice(jniCode)});
+  }
+}
+
+function onAddrKey(e){if(e.key==='Enter'){e.preventDefault();doSearch();}if(e.key==='Escape')document.getElementById('ac-list').style.display='none';}
+function doSearch(){
+  document.getElementById('ac-list').style.display='none';
+  var v=document.getElementById('addr-input').value.trim();if(!v)return;
+  geocodeQuery(v+' Bordeaux Gironde').then(function(results){
+    if(results.length>0){selectGeoResult(results[0]);}
+    else{
+      // Fallback commune name match
+      var aliases={"bordeaux":"bordeaux","merignac":"merignac","pessac":"pessac","talence":"talence","gradignan":"gradignan","begles":"begles","villenave":"villenave","lormont":"lormont","cenon":"cenon","floirac":"floirac","artigues":"artigues","blanquefort":"blanquefort","bruges":"bruges","le bouscat":"le-bouscat","eysines":"eysines","bassens":"bassens","le haillan":"le-haillan","cestas":"cestas","canejan":"canejan","leognan":"leognan","cadaujac":"cadaujac","libourne":"libourne","branne":"branne","saint-emilion":"saint-emilion","saint emilion":"saint-emilion","andernos":"andernos-les-bains","lacanau":"lacanau","ambes":"ambes"};
+      var n=v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+      var found=null;
+      for(var a in aliases){if(n.includes(a)){found=aliases[a];break;}}
+      if(!found){for(var k in FB){if(n.includes(FB[k].name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim())){found=k;break;}}}
+      if(found){
+        if(communeLayers[found])map.flyToBounds(communeLayers[found].getBounds(),{padding:[50,50],duration:0.9});
+        selectCommune(found,null,null);
+      }
+    }
+  });
+}
+
+// Type/condition
+function selectType(btn,t){document.querySelectorAll('.pill').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');selectedType=t;SESSION.propertyType=t;refreshColors();if(currentCommune){showPanel(currentCommune,lastGeoResult?lastGeoResult.label:null,lastGeoResult?getStreetAdjustment(lastGeoResult.street):null,'commune');updateResultCard(currentCommune,lastGeoResult?lastGeoResult.label:null,lastGeoResult?getStreetAdjustment(lastGeoResult.street):null);}trackEvent('type_change',{type:t});}
+function selectCond(btn,c){document.querySelectorAll('.pill-sm').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');selectedCond=c;SESSION.condition=c;refreshColors();if(currentCommune){showPanel(currentCommune,lastGeoResult?lastGeoResult.label:null,lastGeoResult?getStreetAdjustment(lastGeoResult.street):null,'commune');updateResultCard(currentCommune,lastGeoResult?lastGeoResult.label:null,lastGeoResult?getStreetAdjustment(lastGeoResult.street):null);}trackEvent('cond_change',{cond:c});}
+
+// Modal
+function openModal(code){if(code){currentCommune=code;var c=C(code);if(c){document.getElementById('modal-commune').textContent=' — '+c.name;document.getElementById('f-commune').value=code;}}document.getElementById('overlay').style.display='block';document.body.style.overflow='hidden';trackEvent('modal_open',{commune:currentCommune});}
+function closeModal(){document.getElementById('overlay').style.display='none';document.body.style.overflow='';document.getElementById('success-msg').style.display='none';document.getElementById('srch-form').style.display='block';}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
+function toggleRgpd(){rgpdChecked=!rgpdChecked;document.getElementById('rgpd-tog').classList.toggle('on',rgpdChecked);if(rgpdChecked)document.getElementById('rgpd-error').style.display='none';}
+function updBudget(v){var n=parseInt(v);document.getElementById('bdg-display').textContent=n>=1000000?(n/1e6).toFixed(n%1e6===0?0:1)+' M€':(n/1000).toFixed(0)+' k€';}
+
+// Live prices
+async function fetchLivePrices(){
+  if(CONFIG.WEBHOOK_URL==='REPLACE_WITH_YOUR_APPS_SCRIPT_URL')return null;
+  try{var c=sessionStorage.getItem('jni_px9');if(c){var p=JSON.parse(c);if(Date.now()-p.ts<CONFIG.PRICE_CACHE_TTL)return p.data;}}catch(e){}
+  try{var res=await fetch(CONFIG.WEBHOOK_URL+'?action=prices&t='+Date.now(),{mode:'cors'});if(!res.ok)throw new Error();var j=await res.json();if(j.ok&&j.communes){sessionStorage.setItem('jni_px9',JSON.stringify({ts:Date.now(),data:j.communes}));if(j.lastUpdated){var d=new Date(j.lastUpdated);document.getElementById('hdr-updated').textContent=(currentLang==='fr'?'Données du ':'Data from ')+d.toLocaleDateString(currentLang==='fr'?'fr-FR':'en-GB',{day:'numeric',month:'long',year:'numeric'});}return j.communes;}}catch(e){}return null;
+}
+
+// Form submit
+async function handleSubmit(e){
+  e.preventDefault();
+  if(!rgpdChecked){document.getElementById('rgpd-error').style.display='block';return;}
+  var f=document.getElementById('srch-form');
+  var ic=[...f.querySelectorAll('[name=intention]:checked')];
+  if(!ic.length){document.getElementById('intent-error').style.display='block';document.getElementById('intent-grid').scrollIntoView({behavior:'smooth',block:'center'});return;}
+  document.getElementById('intent-error').style.display='none';
+  var fd=new FormData(f);
+  var cc=fd.get('commune')||currentCommune||'',cd=C(cc),cn=cd?cd.name:cc;
+  var sa=lastGeoResult?getStreetAdjustment(lastGeoResult.street):null;
+  var ep=cc?Math.round(getPrice(cc)*(sa?sa.factor:1)):0;
+  var btn=f.querySelector('.btn-sub');btn.textContent=currentLang==='fr'?'Envoi en cours…':'Sending…';btn.disabled=true;
+  var pl={type:'lead',sessionId:SESSION.id,titre:fd.get('title')||'',prenom:fd.get('firstname')||'',nom:fd.get('lastname')||'',email:fd.get('email')||'',telephone:fd.get('phone')||'',commune:cn,adresse:lastGeoResult?lastGeoResult.label:cn,rayon:fd.get('radius')||'',intention:ic.map(function(x){return x.value;}).join(', '),typesBien:[...f.querySelectorAll('[name=type]:checked')].map(function(x){return x.value;}).join(', '),budgetMax:parseInt(fd.get('budget'))||0,services:[...f.querySelectorAll('[name=svc]:checked')].map(function(x){return x.value;}).join(', '),message:fd.get('message')||'',estimatedPrice:ep,streetAdjustment:sa?Math.round((sa.factor-1)*100)+'%':'moyenne commune',lang:currentLang};
+  SESSION.formSubmitted=true;flushSession();
+  if(CONFIG.WEBHOOK_URL!=='REPLACE_WITH_YOUR_APPS_SCRIPT_URL'){try{await fetch(CONFIG.WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pl)});}catch(err){}}
+  document.getElementById('srch-form').style.display='none';document.getElementById('success-msg').style.display='block';
+}
+
+// Translations
+var T={
+  "header-tag":{fr:"Bordeaux Métropole · Estimation par adresse",en:"Bordeaux Metro · Address Estimator"},
+  "hero-eyebrow":{fr:"Bordeaux Métropole · Gironde · Nouvelle-Aquitaine",en:"Bordeaux Métropole · Gironde · South-West France"},
+  "hero-h1":{fr:"Combien vaut votre bien<br>dans le <em>Grand Bordeaux</em>&nbsp;?",en:"What is your property worth<br>in <em>Greater Bordeaux</em>?"},
+  "hero-sub":{fr:"Saisissez votre adresse pour une estimation précise rue par rue, basée sur les données notariales actualisées.",en:"Enter your address for a street-level estimate based on current notarial data."},
+  "search-label":{fr:"Votre adresse",en:"Your address"},
+  "addr-placeholder":{fr:"Ex : 12 rue des Chartrons, Bordeaux",en:"E.g. 12 rue des Chartrons, Bordeaux"},
+  "search-btn":{fr:"Estimer",en:"Estimate"},
+  "data-loading":{fr:"Chargement des données…",en:"Loading data…"},
+  "map-loading":{fr:"Chargement des délimitations officielles…",en:"Loading official boundaries…"},
+  "type-label":{fr:"Type",en:"Type"},
+  "type-appt":{fr:"Appartement",en:"Apartment"},
+  "type-maison":{fr:"Maison",en:"House"},
+  "type-villa":{fr:"Villa · Prestige",en:"Villa · Prestige"},
+  "cond-label":{fr:"État",en:"Condition"},
+  "cond-ancien":{fr:"Ancien",en:"Period"},
+  "cond-renove":{fr:"Rénové",en:"Renovated"},
+  "cond-neuf":{fr:"Neuf · VEFA",en:"New build"},
+  "rc-low":{fr:"Fourchette basse",en:"Lower range"},
+  "rc-med":{fr:"Prix médian",en:"Median price"},
+  "rc-high":{fr:"Fourchette haute",en:"Upper range"},
+  "rc-cta":{fr:"Affiner avec JNI",en:"Refine with JNI"},
+  "legend-title":{fr:"Prix médian au m²",en:"Median price / m²"},
+  "legend-sub":{fr:"Quartiers de Bordeaux",en:"Bordeaux Districts"},
+  "legend-quartier":{fr:"Délimitation de quartier",en:"District boundary"},
+  "panel-eyebrow":{fr:"Analyse de marché",en:"Market analysis"},
+  "panel-h3":{fr:"Sélectionnez un secteur",en:"Select an area"},
+  "panel-idle":{fr:"Saisissez une adresse ou cliquez sur une commune ou un quartier pour accéder aux prix détaillés.",en:"Enter an address or click on a commune or district to view detailed prices."},
+  "pd-grid-label":{fr:"Par type de bien",en:"By property type"},
+  "pd-appt":{fr:"Appartement",en:"Apartment"},
+  "pd-maison":{fr:"Maison",en:"House"},
+  "pd-neuf":{fr:"Neuf",en:"New build"},
+  "pd-villa":{fr:"Prestige",en:"Prestige"},
+  "pd-btn":{fr:"Être contacté pour ce secteur",en:"Request a callback for this area"},
+  "data-note":{fr:"Prix indicatifs · DVF · notaires de France · Actualisation automatique · Précision rue par rue",en:"Indicative prices · DVF · French notaires · Automatic updates · Street-level precision"},
+  "modal-eyebrow":{fr:"James Nisbet Immobilier · Service confidentiel",en:"James Nisbet Immobilier · Confidential service"},
+  "modal-h2":{fr:"Demande de contact",en:"Contact request"},
+  "modal-sub":{fr:"Réponse sous 24h ouvrées · Sans engagement · Discrétion absolue",en:"Response within 24 working hours · No obligation · Complete discretion"},
+  "intent-title":{fr:"Je souhaite",en:"I would like to"},
+  "intent-note":{fr:"Plusieurs choix possibles",en:"Multiple selections possible"},
+  "intent-sell-home":{fr:"Vendre mon logement",en:"Sell my property"},
+  "intent-buy-home":{fr:"Acheter un logement",en:"Buy a property"},
+  "intent-rent":{fr:"Louer un bien",en:"Rent a property"},
+  "intent-buy-bail":{fr:"Acheter un bail commercial",en:"Buy a bail commercial"},
+  "intent-buy-fdc":{fr:"Acheter un fonds de commerce",en:"Buy a fonds de commerce"},
+  "intent-sell-bail":{fr:"Vendre un bail commercial",en:"Sell a bail commercial"},
+  "intent-sell-fdc":{fr:"Vendre un fonds de commerce",en:"Sell a fonds de commerce"},
+  "intent-error":{fr:"⚠ Veuillez sélectionner au moins une option.",en:"⚠ Please select at least one option."},
+  "coords-title":{fr:"Coordonnées",en:"Your details"},
+  "label-titre":{fr:"Titre",en:"Title"},
+  "label-prenom":{fr:"Prénom *",en:"First name *"},
+  "label-nom":{fr:"Nom *",en:"Last name *"},
+  "label-email":{fr:"Email *",en:"Email *"},
+  "label-tel":{fr:"Téléphone *",en:"Phone *"},
+  "loc-title":{fr:"Secteur souhaité",en:"Area of interest"},
+  "label-commune":{fr:"Commune",en:"Commune"},
+  "label-rayon":{fr:"Rayon",en:"Radius"},
+  "type-title":{fr:"Type de bien",en:"Property type"},
+  "type-chateau":{fr:"Château",en:"Château"},
+  "type-manoir":{fr:"Manoir · Bastide",en:"Manor · Bastide"},
+  "type-loft":{fr:"Loft · Duplex",en:"Loft · Duplex"},
+  "type-prop":{fr:"Propriété d'exception",en:"Exceptional property"},
+  "budget-title":{fr:"Budget maximum",en:"Maximum budget"},
+  "svc-title":{fr:"Services",en:"Services"},
+  "svc-notaire":{fr:"Notaire",en:"Notaire"},
+  "svc-archi":{fr:"Architecte",en:"Architect"},
+  "svc-finance":{fr:"Courtier financement",en:"Mortgage broker"},
+  "svc-diag":{fr:"Diagnostics",en:"Surveys"},
+  "svc-demenage":{fr:"Déménagement",en:"Removals"},
+  "svc-fiscal":{fr:"Conseil fiscal",en:"Tax advice"},
+  "msg-title":{fr:"Votre projet",en:"Your project"},
+  "label-message":{fr:"Description",en:"Description"},
+  "msg-placeholder":{fr:"Résidence principale, quartier Chartrons…",en:"Primary residence, Chartrons area…"},
+  "rgpd-text":{fr:"J'accepte que mes données soient traitées par EI Alexander Nisbet (James Nisbet Immobilier) afin de traiter ma demande, conformément à la <a href='https://www.jnisbetimmo.com/mentions-legales' target='_blank' rel='noopener'>politique de confidentialité RGPD</a>.",en:"I agree that my data will be processed by EI Alexander Nisbet (James Nisbet Immobilier) to handle my enquiry, in accordance with the <a href='https://www.jnisbetimmo.com/mentions-legales' target='_blank' rel='noopener'>GDPR Privacy Policy</a>."},
+  "rgpd-error":{fr:"⚠ Veuillez accepter la politique RGPD.",en:"⚠ Please accept the Privacy Policy."},
+  "submit-btn":{fr:"Envoyer ma demande",en:"Send my enquiry"},
+  "success-h3":{fr:"Demande transmise",en:"Enquiry sent"},
+  "success-p":{fr:"James Nisbet vous contactera sous 24h ouvrées en toute confidentialité.",en:"James Nisbet will contact you within 24 working hours in complete confidence."},
+  "success-close":{fr:"Fermer",en:"Close"}
+};
+
+function setLanguage(lang){
+  currentLang=lang;SESSION.lang=lang;document.documentElement.lang=lang;
+  document.querySelectorAll('[data-i18n]').forEach(function(el){var k=el.getAttribute('data-i18n');if(T[k]&&T[k][lang]!==undefined){if(el.tagName==='INPUT'||el.tagName==='TEXTAREA')el.placeholder=T[k][lang];else el.innerHTML=T[k][lang];}});
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){var k=el.getAttribute('data-i18n-placeholder');if(T[k]&&T[k][lang])el.placeholder=T[k][lang];});
+  var btn=document.getElementById('lang-toggle-btn');
+  if(btn)btn.innerHTML=lang==='fr'?'<span class="lang-flag">🇫🇷</span><span class="lang-sep">·</span>FR<span class="lang-sep" style="margin:0 4px">|</span><span class="lang-inactive">EN<span class="lang-sep">·</span>🇬🇧</span>':'<span class="lang-inactive">🇫🇷<span class="lang-sep">·</span>FR</span><span class="lang-sep" style="margin:0 4px">|</span><span class="lang-flag">🇬🇧</span><span class="lang-sep">·</span>EN';
+  if(currentCommune)showPanel(currentCommune,lastGeoResult?lastGeoResult.label:null,lastGeoResult?getStreetAdjustment(lastGeoResult.street):null,'commune');
+  try{sessionStorage.setItem('jni-lang',lang);}catch(e){}
+}
+function toggleLanguage(){setLanguage(currentLang==='fr'?'en':'fr');}
+
+function populateSel(){
+  var sel=document.getElementById('f-commune');
+  sel.innerHTML='<option value="">—</option>';
+  Object.keys(FB).sort(function(a,b){return FB[a].name.localeCompare(FB[b].name,'fr');}).forEach(function(k){
+    var o=document.createElement('option');o.value=k;o.textContent=FB[k].name;sel.appendChild(o);
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',async function(){
+  var sl=null;try{sl=sessionStorage.getItem('jni-lang');}catch(e){}
+  setLanguage(sl||((navigator.language||'fr').toLowerCase().startsWith('en')?'en':'fr'));
+  populateSel();
+
+  document.getElementById('data-loading').style.display='block';
+
+  // Load official commune boundaries (primary — from Overpass)
+  // AND quartier boundaries (secondary) in parallel
+  // AND live prices — all three simultaneously
+  var [boundaryResult,,priceResult]=await Promise.allSettled([
+    loadCommuneBoundaries(),
+    loadQuartierBoundaries(),
+    fetchLivePrices()
+  ]);
+
+  document.getElementById('data-loading').style.display='none';
+
+  if(priceResult.value&&Object.keys(priceResult.value).length>0){
+    COMMUNES=priceResult.value;
+    refreshColors();
+  }
+});
+</script>
+</body>
+</html>
